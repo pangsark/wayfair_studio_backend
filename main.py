@@ -5,11 +5,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
+from services.text_extraction import get_step_explanation  # 👈 import the service
+
 load_dotenv()
 
 app = FastAPI()
 
-# CORS setup so your Next.js frontend can call this
 cors_origins = os.getenv("CORS_ORIGIN", "http://localhost:3000").split(",")
 
 app.add_middleware(
@@ -27,13 +28,9 @@ def health():
 
 
 @app.get("/api/steps/{step_id}/explanation")
-def get_explanation(step_id: int):
+def explanation_endpoint(step_id: int):
     """
-    Returns the magic number and explanation for a step.
-    Shape matches what your frontend expects.
+    FastAPI endpoint that delegates to the text_extraction service.
+    The response shape matches what your frontend expects.
     """
-    return {
-        "step": step_id,
-        "magicNumber": 42,
-        "explanation": f"This is example server data for step {step_id}. The magic number is 42.",
-    }
+    return get_step_explanation(step_id)
