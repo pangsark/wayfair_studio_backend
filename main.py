@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
-from services.text_extraction import get_step_explanation
+from services.text_extraction import get_step_explanation, get_checklist
 from services.step_colorizer import get_step_image_path
 
 load_dotenv()
@@ -37,6 +37,9 @@ def health():
 def explanation_endpoint(step_id: int):
     return get_step_explanation(step_id)
 
+@app.get("/api/steps/{step_id}/tools")
+def checklist(step_id: int):
+    return get_checklist(step_id)
 
 @app.get("/api/steps/{step_id}/image")
 def step_image_endpoint(step_id: int, colorized: bool = False):
