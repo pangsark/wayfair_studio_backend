@@ -35,11 +35,11 @@ def health():
 
 @app.get("/api/steps/{step_id}/explanation")
 def explanation_endpoint(step_id: int):
-    return get_step_explanation(step_id)
+    return get_step_explanation(step_number = step_id)
 
 @app.get("/api/steps/{step_id}/tools")
 def checklist(step_id: int):
-    return get_checklist(step_id)
+    return get_checklist(step_number = step_id)
 
 @app.get("/api/steps/{step_id}/image")
 def step_image_endpoint(step_id: int, colorized: bool = False):
