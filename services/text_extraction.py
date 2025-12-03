@@ -37,10 +37,10 @@ def get_step_explanation(manual_id: int = 1, step_number: int = None):
 
     return {"manual_id": manual_id, "step": step_number, "description": description_text}
 
-def get_checklist(manual_id: int = 1, step_number: int = None):
+def get_tools(manual_id: int = 1, step_number: int = None):
 
-    cached = db_helper.get_cached_value(manual_id, step_number, StepColumn.CHECKLIST)
-    if cached and cached["checklist"]:
+    cached = db_helper.get_cached_value(manual_id, step_number, StepColumn.TOOLS)
+    if cached and cached["tools"]:
         return cached
 
     checklist = {1:["Rubber Mallet (optional)", "Rubber Mallet 2 (optional)"], 2:["Allen Wrench (A13)"]}
@@ -48,7 +48,7 @@ def get_checklist(manual_id: int = 1, step_number: int = None):
 
     # store into DB (safe no-op if DB not configured)
     try:
-        db_helper.store_value(manual_id, step_number, StepColumn.CHECKLIST, checklist_text)
+        db_helper.store_value(manual_id, step_number, StepColumn.TOOLS, checklist_text)
     except Exception:
         # log in the future.
         pass

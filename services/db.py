@@ -46,7 +46,7 @@ def _ensure_table_exists():
                     manual_id INTEGER NOT NULL REFERENCES manuals(id) ON DELETE CASCADE,
                     step_number INTEGER NOT NULL,
                     description TEXT,
-                    checklist TEXT,
+                    tools TEXT,
                     image_url TEXT NOT NULL,
                     image_alt TEXT,
                     UNIQUE(manual_id, step_number)
