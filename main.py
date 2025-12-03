@@ -9,10 +9,15 @@ from dotenv import load_dotenv
 
 from services.text_extraction import get_step_explanation, get_tools
 from services.step_colorizer import get_step_image_path
+from services.db import _ensure_table_exists
 
 load_dotenv()
 
 app = FastAPI()
+
+@app.on_event("startup")
+def startup_event():
+    _ensure_table_exists()
 
 cors_origins = os.getenv("CORS_ORIGIN", "http://localhost:3000").split(",")
 

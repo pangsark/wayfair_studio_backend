@@ -46,7 +46,7 @@ def _ensure_table_exists():
                     manual_id INTEGER NOT NULL REFERENCES manuals(id) ON DELETE CASCADE,
                     step_number INTEGER NOT NULL,
                     description TEXT,
-                    tools TEXT,
+                    tools TEXT[],
                     image_url TEXT NOT NULL,
                     image_alt TEXT,
                     UNIQUE(manual_id, step_number)
@@ -61,9 +61,6 @@ def get_cached_value(manual_id: int, step_number: int, column: StepColumn) -> Op
         conn = _get_connection()
     except RuntimeError:
         return None
-
-    # ensure table exists so first-run is friendly
-    _ensure_table_exists()
 
     column_name = column.value
 
@@ -87,8 +84,6 @@ def store_value(manual_id: int, step_number: int, column: StepColumn, value: str
         conn = _get_connection()
     except RuntimeError:
         return
-
-    _ensure_table_exists()
 
     column_name = column.value
 
