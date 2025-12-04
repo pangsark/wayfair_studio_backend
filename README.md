@@ -33,3 +33,21 @@ docker compose up -d
 Update the ```.env```:
 
 ```DATABASE_URL=postgresql://wayfair:wayfair123@localhost:5432/wayfairstudio```
+
+Add some dummy data:
+
+```bash
+psql -h localhost -U wayfair -d wayfairstudio
+```
+
+```bash
+INSERT INTO manuals (name, slug, description)
+VALUES ('Test Manual', 'test-manual', 'This is a sample manual.');
+```
+
+```bash
+INSERT INTO steps (manual_id, step_number, image_url, image_alt)
+VALUES 
+(1, 1, 'https://example.com/step1.jpg', 'Step 1 image'),
+(1, 2, 'https://example.com/step2.jpg', 'Step 2 image');
+```
