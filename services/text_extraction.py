@@ -1,5 +1,8 @@
 # services/text_extraction.py
 from typing import TypedDict
+import os
+import replicate
+import json
 
 
 class ExplanationData(TypedDict):
@@ -7,6 +10,7 @@ class ExplanationData(TypedDict):
     magicNumber: int
     explanation: str
 
+BASE_IMAGE_PATH = "/Users/graceeverts/Desktop/clinic/pdfs/shelf_2/Step{}.png"
 
 def get_step_explanation(step_id: int) -> ExplanationData:
     """
@@ -31,3 +35,29 @@ def get_checklist(step_id):
     checklist = {1:["Rubber Mallet (optional)"], 2:["Allen Wrench (A13)"]}
     
     return checklist[step_id]
+
+# helper functions calling replicate api
+def get_text(step_num):
+    image_path = BASE_IMAGE_PATH.format(step_num)
+    input = {
+        "prompt": ("For the given furniture manual step, give a textual description of the procedure and objects. The textual description should be 3-5 sentences. Rules: \n" 
+                    "If parts are labeled, refer to them with that label. Otherwise, infer what the part is.\n The output should ONLY include a textual description for the step."),
+        "system_prompt": "You are an expert in furnature assembly manuals.",
+        "image_input":[open(image_path,"rb")]
+    }
+
+    output = "".join(replicate.run("openai/gpt-4o", input))
+    print("Text Description:\n",output,'\n\n\n')
+    return output
+
+def get_tools(step_num, tool_list = []):
+    image_path = BASE_IMAGE_PATH.format(step_num)
+    input = {
+        "prompt": ("For the given furniture manual step, give a list of tool(s) needed to complete the step. If a tool is explicitely labeled and shown, include it in the list. Otherwise, infer from the step what tools (if any) are required. Include only TOOLS, not PARTS. Output should ONLY be an array of tools"),
+        "system_prompt": "You are an expert in furnature assembly manuals.",
+        "image_input":[open(image_path,"rb")]
+    }
+
+    output = json.loads("".join(replicate.run("openai/gpt-4o", input)))
+    print("Tools:\n",output,'\n\n\n')
+    return output
