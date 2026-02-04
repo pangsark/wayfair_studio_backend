@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
+from pathlib import Path
 
 from services.text_extraction import get_step_explanation, get_tools
 from services.step_colorizer import get_step_image_path
@@ -29,8 +30,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Optional: if you still want static serving
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mounting a static directory to serve images
+
+BASE_DIR = Path(__file__).resolve().parent
+IMAGES_DIR = BASE_DIR / "public" / "images"
+
+app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 
 @app.get("/health")
