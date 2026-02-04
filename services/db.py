@@ -13,12 +13,50 @@ except Exception:
     psycopg2 = None
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+# #region agent log
+import json as _dbg_json
+def _dbg_log(hyp, msg, data):
+    try:
+        with open("/Users/aaronzhang/Desktop/wayfair_studio_backend/.cursor/debug.log", "a") as f:
+            # Mask password in URL for security
+            safe_data = {k: (v[:20] + "..." if isinstance(v, str) and len(v) > 30 else v) for k, v in data.items()}
+            f.write(_dbg_json.dumps({"hypothesisId": hyp, "location": "db.py", "message": msg, "data": safe_data}) + "\n")
+    except: pass
+# #endregion
+
 def _get_connection():
+    # #region agent log
+    _dbg_log("A,B,E", "DATABASE_URL value check", {"url_set": DATABASE_URL is not None, "url_prefix": DATABASE_URL[:40] if DATABASE_URL else "None", "env_file_path": parent_env_path, "env_file_exists": os.path.exists(parent_env_path)})
+    # Parse URL to check password details (not the actual password)
+    if DATABASE_URL and "://" in DATABASE_URL:
+        try:
+            creds_part = DATABASE_URL.split("://")[1].split("@")[0]  # user:pass
+            if ":" in creds_part:
+                user, pwd = creds_part.split(":", 1)
+                _dbg_log("B", "URL credentials check", {"user": user, "pwd_len": len(pwd), "pwd_starts": pwd[:2] if pwd else "", "pwd_ends": pwd[-2:] if len(pwd) >= 2 else ""})
+            else:
+                _dbg_log("B", "URL has no password separator", {"creds_part": creds_part})
+        except: pass
+    # #endregion
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL not set")
     if psycopg2 is None:
         raise RuntimeError("psycopg2 not installed")
-    return psycopg2.connect(DATABASE_URL)
+    # #region agent log
+    _dbg_log("C,D", "Attempting psycopg2.connect", {"url_host_part": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else "no_at_sign"})
+    # #endregion
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        # #region agent log
+        _dbg_log("ALL", "Connection successful", {"status": "ok"})
+        # #endregion
+        return conn
+    except Exception as e:
+        # #region agent log
+        _dbg_log("ALL", "Connection failed", {"error_type": type(e).__name__, "error_msg": str(e)[:100]})
+        # #endregion
+        raise
 
 
 def _ensure_table_exists():
@@ -35,7 +73,8 @@ def _ensure_table_exists():
                     id SERIAL PRIMARY KEY,
                     name TEXT NOT NULL,
                     slug TEXT UNIQUE NOT NULL,
-                    description TEXT
+                    description TEXT,
+                    product_image_url TEXT
                 )
                 """)
 
@@ -49,6 +88,7 @@ def _ensure_table_exists():
                     tools TEXT[],
                     image_url TEXT NOT NULL,
                     image_alt TEXT,
+                    colorized_image_url TEXT,
                     UNIQUE(manual_id, step_number)
                 )
                 """
@@ -95,3 +135,23 @@ def store_value(manual_id: int, step_number: int, column: StepColumn, value: str
                 WHERE manual_id = %s AND step_number = %s
                 """
             cur.execute(query, (value, manual_id, step_number))
+
+
+def get_product_image_url(manual_id: int) -> Optional[str]:
+    """Get the colored product reference image URL for a manual."""
+    try:
+        conn = _get_connection()
+    except RuntimeError:
+        return None
+
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT product_image_url 
+                FROM manuals 
+                WHERE id = %s
+            """, (manual_id,))
+            row = cur.fetchone()
+            if row and row[0]:
+                return row[0]
+    return None
