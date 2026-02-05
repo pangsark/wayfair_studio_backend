@@ -8,9 +8,8 @@ from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
 from pathlib import Path
-
-from services.text_extraction import get_step_explanation, get_tools
-from services.step_colorizer import get_step_image_url
+from services.text_extraction import get_step_explanation
+from services.step_colorizer import get_step_image_path
 from services.db import _ensure_table_exists
 from services.chat_service import get_chat_response
 
@@ -54,12 +53,8 @@ def health():
 def explanation_endpoint(step_id: int):
     return get_step_explanation(step_number = step_id)
 
-@app.get("/api/steps/{step_id}/tools")
-def checklist(step_id: int):
-    return get_tools(step_number = step_id)
-
-@app.get("/api/manuals/{manual_id}/steps/{step_id}/image")
-def step_image_endpoint(manual_id: int, step_id: int, colorized: bool = False):
+@app.get("/api/steps/{step_id}/image")
+def step_image_endpoint(step_id: int, colorized: bool = False):
     """
     Returns the image URL for this manual step.
     
