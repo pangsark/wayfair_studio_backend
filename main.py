@@ -9,7 +9,6 @@ from typing import Optional
 from dotenv import load_dotenv
 from pathlib import Path
 from services.text_extraction import get_step_explanation
-from services.step_colorizer import get_step_image_path
 from services.db import _ensure_table_exists
 from services.chat_service import get_chat_response
 

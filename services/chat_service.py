@@ -4,7 +4,7 @@ from typing import Optional
 from dotenv import load_dotenv
 import replicate
 
-from .text_extraction import get_step_explanation, get_tools
+from .text_extraction import get_step_explanation
 from .step_colorizer import get_base_image_url_from_db
 
 load_dotenv()
@@ -50,13 +50,8 @@ def _build_system_prompt(manual_id: int, step_number: int) -> str:
     except Exception:
         step_description = "No description available for this step."
 
-    # Get tools list
-    try:
-        tools_data = get_tools(manual_id=manual_id, step_number=step_number)
-        tools = tools_data.get("tools", [])
-        tools_list = "\n".join(f"- {tool}" for tool in tools) if tools else "No specific tools required."
-    except Exception:
-        tools_list = "Tool information not available."
+    # Tools list placeholder (get_tools removed for now)
+    tools_list = "Tool information not available."
 
     return SYSTEM_PROMPT_TEMPLATE.format(
         manual_id=manual_id,
