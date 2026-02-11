@@ -61,10 +61,10 @@ VALUES ('Test Manual', 'test-manual', 'This is a sample manual.');
 ```
 
 ```sql
-INSERT INTO steps (manual_id, step_number, image_url, image_alt)
+INSERT INTO steps (manual_id, step_number, image_url)
 VALUES 
-(1, 1, 'https://example.com/step1.jpg', 'Step 1 image'),
-(1, 2, 'https://example.com/step2.jpg', 'Step 2 image');
+(1, 1, 'https://example.com/step1.jpg'),
+(1, 2, 'https://example.com/step2.jpg');
 ```
 
 ---

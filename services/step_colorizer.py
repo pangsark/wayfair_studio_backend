@@ -4,7 +4,7 @@ import replicate
 from typing import Optional
 from dotenv import load_dotenv
 
-from .db import get_cached_value, store_value, get_product_image_url
+from .db import get_cached_value, get_product_image_url
 from .db_columns import StepColumn
 
 load_dotenv()
@@ -18,12 +18,8 @@ DEFAULT_PROMPT = "Colorize the product dimensions diagram to be the same color a
 
 def get_colorized_image_from_db(manual_id: int, step_number: int) -> Optional[str]:
     """
-    Check if a colorized image URL exists in the database for this step.
-    Returns the URL string if found, None otherwise.
+    No longer cached in DB; always returns None so colorized image is generated via Replicate.
     """
-    result = get_cached_value(manual_id, step_number, StepColumn.COLORIZED_IMAGE_URL)
-    if result and result.get("colorized_image_url"):
-        return result["colorized_image_url"]
     return None
 
 
@@ -93,10 +89,8 @@ def get_step_image_url(
     Service function that returns the image URL for a given manual step.
     
     If colorized=True:
-        1. Check database for cached colorized image
-        2. If not found, get base diagram + product reference image
-        3. Call Replicate to colorize using both images
-        4. Cache the colorized result in the database
+        1. Get base diagram + product reference image from DB
+        2. Call Replicate to colorize using both images (no DB cache)
     
     If colorized=False:
         Return the base diagram image URL from the database
@@ -130,10 +124,7 @@ def get_step_image_url(
     if not colored_ref:
         raise FileNotFoundError(f"No product reference image found for manual {manual_id}")
     
-    # Call Replicate API to colorize
+    # Call Replicate API to colorize (no DB cache)
     colorized_url = colorize_with_replicate(colored_ref, diagram_url)
-    
-    # Cache the result in the database
-    store_value(manual_id, step_number, StepColumn.COLORIZED_IMAGE_URL, colorized_url)
-    
+
     return colorized_url
