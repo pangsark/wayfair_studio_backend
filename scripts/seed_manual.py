@@ -32,8 +32,6 @@ def seed_database():
                     description TEXT,
                     tools TEXT[],
                     image_url TEXT NOT NULL,
-                    image_alt TEXT,
-                    colorized_image_url TEXT,
                     UNIQUE(manual_id, step_number)
                 )
             """)
@@ -57,16 +55,15 @@ def seed_database():
             
             # Insert the diagram as step 1
             cur.execute("""
-                INSERT INTO steps (manual_id, step_number, description, image_url, image_alt)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO steps (manual_id, step_number, description, image_url)
+                VALUES (%s, %s, %s, %s)
                 ON CONFLICT (manual_id, step_number) DO UPDATE
                 SET image_url = EXCLUDED.image_url
             """, (
                 manual_id,
                 1,
                 'Dimensions diagram',
-                'http://localhost:4000/static/images/drawer_diagram.png',
-                'Drawer dimensions diagram'
+                'http://localhost:4000/static/images/drawer_diagram.png'
             ))
             print(f"✓ Added step 1 (dimensions diagram) to manual {manual_id}")
     

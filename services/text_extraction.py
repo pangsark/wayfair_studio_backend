@@ -1,9 +1,10 @@
 # services/text_extraction.py
 import os
+import re
 import replicate
 import base64
 from pathlib import Path
-from typing import TypedDict
+from typing import List
 from dotenv import load_dotenv
 
 from . import db as db_helper
@@ -11,6 +12,44 @@ from .db_columns import StepColumn
 
 parent_env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 load_dotenv(parent_env_path)
+
+IMAGES_DIR = Path(__file__).resolve().parent.parent / "public" / "images"
+
+
+def discover_step_numbers() -> List[int]:
+    """
+    Find all step numbers that have an image in public/images (step1.png, step2.jpg, etc.).
+    Returns sorted list of step numbers.
+    """
+    if not IMAGES_DIR.exists():
+        return []
+    step_nums = set()
+    pattern = re.compile(r"^step(\d+)\.(png|jpg|jpeg)$", re.IGNORECASE)
+    for path in IMAGES_DIR.iterdir():
+        if path.is_file():
+            m = pattern.match(path.name)
+            if m:
+                step_nums.add(int(m.group(1)))
+    return sorted(step_nums)
+
+
+def preload_manual_step_explanations(manual_id: int = 1) -> None:
+    """
+    Run get_step_explanation for every step discovered in public/images.
+    Intended to be run in a background thread at startup. Skips steps that
+    already have a description in the DB. Continues on per-step errors.
+    """
+    step_numbers = discover_step_numbers()
+    if not step_numbers:
+        print("Preload: no step images found in public/images")
+        return
+    print(f"Preload: filling step explanations for manual_id={manual_id}, steps={step_numbers}")
+    for step_number in step_numbers:
+        try:
+            get_step_explanation(manual_id=manual_id, step_number=step_number)
+            print(f"Preload: step {step_number} done")
+        except Exception as e:
+            print(f"Preload: step {step_number} failed: {e}")
 
 
 def get_step_explanation(manual_id: int = 1, step_number: int = None):
@@ -26,19 +65,21 @@ def get_step_explanation(manual_id: int = 1, step_number: int = None):
         return cached
 
     # Find the image file in public/images
-    images_dir = Path(__file__).parent.parent / "public" / "images"
     image_path = None
-    
-    # Try both .png and .jpg extensions
     for ext in [".png", ".jpg"]:
-        potential_path = images_dir / f"step{step_number}{ext}"
+        potential_path = IMAGES_DIR / f"step{step_number}{ext}"
         if potential_path.exists():
             image_path = potential_path
             break
     
     if not image_path:
         raise FileNotFoundError(f"Step image not found for step {step_number}")
-    
+
+    # Ensure manual and step rows exist so we can store the description later
+    base_url = os.getenv("APP_URL", "http://localhost:4000").rstrip("/")
+    image_url = f"{base_url}/images/step{step_number}{image_path.suffix}"
+    db_helper.ensure_manual_and_step(manual_id, step_number, image_url)
+
     # Read image file and encode as base64
     with open(image_path, "rb") as f:
         image_bytes = f.read()

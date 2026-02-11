@@ -1,6 +1,7 @@
 # main.py (in your backend root)
 
 import os
+import threading
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -8,7 +9,7 @@ from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
 from pathlib import Path
-from services.text_extraction import get_step_explanation
+from services.text_extraction import get_step_explanation, preload_manual_step_explanations
 from services.db import _ensure_table_exists
 from services.chat_service import get_chat_response
 
@@ -26,6 +27,12 @@ app = FastAPI()
 @app.on_event("startup")
 def startup_event():
     _ensure_table_exists()
+    thread = threading.Thread(
+        target=preload_manual_step_explanations,
+        kwargs={"manual_id": 1},
+        daemon=True,
+    )
+    thread.start()
 
 cors_origins = os.getenv("CORS_ORIGIN", "http://localhost:3000").split(",")
 

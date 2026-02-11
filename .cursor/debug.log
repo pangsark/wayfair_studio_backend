@@ -454,3 +454,215 @@
 {"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
 {"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
 {"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5432/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection failed", "data": {"error_type": "OperationalError", "error_msg": "FATAL:  password aut..."}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}
+{"hypothesisId": "A,B,E", "location": "db.py", "message": "DATABASE_URL value check", "data": {"url_set": true, "url_prefix": "postgresql://wayfair...", "env_file_path": "/Users/aaronzhang/De...", "env_file_exists": true}}
+{"hypothesisId": "B", "location": "db.py", "message": "URL credentials check", "data": {"user": "wayfair", "pwd_len": 10, "pwd_starts": "wa", "pwd_ends": "23"}}
+{"hypothesisId": "C,D", "location": "db.py", "message": "Attempting psycopg2.connect", "data": {"url_host_part": "localhost:5433/wayfairstudio"}}
+{"hypothesisId": "ALL", "location": "db.py", "message": "Connection successful", "data": {"status": "ok"}}

@@ -87,8 +87,6 @@ def _ensure_table_exists():
                     description TEXT,
                     tools TEXT[],
                     image_url TEXT NOT NULL,
-                    image_alt TEXT,
-                    colorized_image_url TEXT,
                     UNIQUE(manual_id, step_number)
                 )
                 """
@@ -135,6 +133,44 @@ def store_value(manual_id: int, step_number: int, column: StepColumn, value: str
                 WHERE manual_id = %s AND step_number = %s
                 """
             cur.execute(query, (value, manual_id, step_number))
+
+
+def ensure_manual_and_step(
+    manual_id: int,
+    step_number: int,
+    image_url: str,
+    manual_name: Optional[str] = None,
+    manual_slug: Optional[str] = None,
+) -> None:
+    """
+    Ensure a row exists in manuals for manual_id and a row in steps for
+    (manual_id, step_number). Inserts with defaults if missing. No-op if DB not configured.
+    """
+    try:
+        conn = _get_connection()
+    except RuntimeError:
+        return
+
+    with conn:
+        with conn.cursor() as cur:
+            name = manual_name or f"Manual {manual_id}"
+            slug = manual_slug or f"manual-{manual_id}"
+            cur.execute(
+                """
+                INSERT INTO manuals (id, name, slug, description, product_image_url)
+                VALUES (%s, %s, %s, NULL, NULL)
+                ON CONFLICT (id) DO NOTHING
+                """,
+                (manual_id, name, slug),
+            )
+            cur.execute(
+                """
+                INSERT INTO steps (manual_id, step_number, image_url)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (manual_id, step_number) DO NOTHING
+                """,
+                (manual_id, step_number, image_url),
+            )
 
 
 def get_product_image_url(manual_id: int) -> Optional[str]:
