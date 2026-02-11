@@ -42,7 +42,18 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# custom middleware for image CORS headers
+@app.middleware("http")
+async def add_image_cors_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/images/"):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+        response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 # Serve static files (images)
 BASE_DIR = Path(__file__).resolve().parent
