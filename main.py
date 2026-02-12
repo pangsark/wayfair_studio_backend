@@ -12,6 +12,7 @@ from pathlib import Path
 from services.text_extraction import get_step_explanation, preload_manual_step_explanations
 from services.db import _ensure_table_exists
 from services.chat_service import get_chat_response
+from services.lasso import save_lasso_screenshot, LassoImageData
 
 
 # Request model for chat endpoint
@@ -116,5 +117,13 @@ def chat_endpoint(manual_id: int, step_id: int, request: ChatRequest):
             image_url=request.image_url
         )
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/lasso/upload")
+def lasso_upload_endpoint(data: LassoImageData):
+    """Save lasso screenshot as lasso.png"""
+    try:
+        return save_lasso_screenshot(data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
