@@ -10,9 +10,14 @@ from typing import Optional
 from dotenv import load_dotenv
 from pathlib import Path
 from services.text_extraction import get_step_explanation, preload_manual_step_explanations
-from services.db import _ensure_table_exists
+from services.db import _ensure_table_exists, get_cached_value
+from services.db_columns import StepColumn
 from services.chat_service import get_chat_response
+from services.orientation_generator import start_orientation_generation
+from services.step_colorizer import get_step_image_url
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+IMAGES_DIR = BASE_DIR / "public" / "images"
 
 # Request model for chat endpoint
 class ChatRequest(BaseModel):
@@ -71,6 +76,7 @@ def step_image_endpoint(step_id: int, colorized: bool = False):
       http://localhost:4000/api/manuals/1/steps/1/image
       http://localhost:4000/api/manuals/1/steps/1/image?colorized=true
     """
+    manual_id = 1  # Assuming single manual for now
     try:
         image_url = get_step_image_url(manual_id, step_id, colorized=colorized)
         return {"image_url": image_url, "colorized": colorized}
@@ -107,3 +113,54 @@ def chat_endpoint(manual_id: int, step_id: int, request: ChatRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def get_step_image_path(manual_id: int = 1, step_number: int = None):
+    """
+    Helper to get local file path for a given step
+    """
+
+    image_path = IMAGES_DIR / f"step{step_number}.png"
+    if not image_path.exists():
+        raise FileNotFoundError(f"Step image not found: {image_path}")
+    return image_path
+
+
+@app.post("/api/orientation/generate")
+def generate_orientation_endpoint(manual_id: int, from_step: int, to_step: int):
+    """
+    Start background generation of orientation text for a step transition.
+    Returns immediately without waiting for analysis to complete.
+    
+    Response: { "status": "started" or "completed" }
+    """
+
+    # Check cache
+    cached_text = get_cached_value(
+        manual_id,
+        from_step,
+        StepColumn.ORIENTATION_TEXT,
+        returnMetadata=False
+    )
+
+    # If exists in db, return parsed JSON
+    if cached_text:
+        return {"status": "completed"}
+    
+    start_orientation_generation(
+        manual_id=manual_id,
+        from_step=from_step,
+        to_step=to_step
+    )
+    return {"status": "started"}
+
+
+@app.get("/api/orientation/text")
+def get_orientation_text_endpoint(manual_id: int, step: int):
+    """
+    Get cached orientation text for a step.
+    
+    Response: { "text": null } or { "text": "{\"show_popup\": true, \"message\": \"...\"}" }
+    """
+    text = get_cached_value(manual_id, step, StepColumn.ORIENTATION_TEXT, returnMetadata=False)
+    return {"text": text}

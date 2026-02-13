@@ -26,7 +26,7 @@ def _dbg_log(hyp, msg, data):
 # #endregion
 
 def _get_connection():
-    # #region agent log
+    # region agent log
     _dbg_log("A,B,E", "DATABASE_URL value check", {"url_set": DATABASE_URL is not None, "url_prefix": DATABASE_URL[:40] if DATABASE_URL else "None", "env_file_path": parent_env_path, "env_file_exists": os.path.exists(parent_env_path)})
     # Parse URL to check password details (not the actual password)
     if DATABASE_URL and "://" in DATABASE_URL:
@@ -87,13 +87,14 @@ def _ensure_table_exists():
                     description TEXT,
                     tools TEXT[],
                     image_url TEXT NOT NULL,
+                    orientation_text JSONB,
                     UNIQUE(manual_id, step_number)
                 )
                 """
             )
 
 
-def get_cached_value(manual_id: int, step_number: int, column: StepColumn) -> Optional[dict]:
+def get_cached_value(manual_id: int, step_number: int, column: StepColumn, returnMetadata: bool = True) -> Optional[dict]:
     """Fetch any column for a given manual and step"""
     try:
         conn = _get_connection()
@@ -110,8 +111,10 @@ def get_cached_value(manual_id: int, step_number: int, column: StepColumn) -> Op
                 """ 
             cur.execute(query, (manual_id, step_number))
             row = cur.fetchone()
-            if row:
+            if row and returnMetadata:
                 return {"manual_id": manual_id, "step": step_number, column_name: row[column_name]}
+            elif row:
+                return row[column_name]
 
     return None
 
