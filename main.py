@@ -16,6 +16,7 @@ from services.chat_service import get_chat_response
 from services.orientation_generator import start_orientation_generation
 from services.step_colorizer import get_step_image_url
 from services.lasso import save_lasso_screenshot, LassoImageData
+from services.step_checklist import generate_checklist
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 IMAGES_DIR = BASE_DIR / "public" / "images"
@@ -78,6 +79,24 @@ def explanation_endpoint(manual_id: int, step_id: int):
         manual_id=manual_id,
         step_number = step_id
     )
+
+
+@app.get("/api/manuals/{manual_id}/steps/{step_id}/checklist")
+def checklist_endpoint(manual_id: int, step_id: int):
+    """
+    Returns a dynamically generated checklist of actions for a specific step.
+    """
+    try:
+        # Call the logic from services/step_checklist.py
+        result = generate_checklist(manual_id=manual_id, step_number=step_id)
+        return result
+    except ValueError as e:
+        # If the AI fails or the description is missing
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        # For any other unexpected errors
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
+    
 
 @app.get("/api/steps/{step_id}/image")
 def step_image_endpoint(step_id: int, colorized: bool = False):
