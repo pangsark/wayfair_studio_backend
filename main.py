@@ -15,6 +15,8 @@ from services.db_columns import StepColumn
 from services.chat_service import get_chat_response
 from services.orientation_generator import start_orientation_generation
 from services.step_colorizer import get_step_image_url
+from services.lasso import save_lasso_screenshot, LassoImageData
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 IMAGES_DIR = BASE_DIR / "public" / "images"
@@ -47,7 +49,18 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# custom middleware for image CORS headers
+@app.middleware("http")
+async def add_image_cors_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/images/"):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+        response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 # Serve static files (images)
 BASE_DIR = Path(__file__).resolve().parent
@@ -164,3 +177,12 @@ def get_orientation_text_endpoint(manual_id: int, step: int):
     """
     text = get_cached_value(manual_id, step, StepColumn.ORIENTATION_TEXT, returnMetadata=False)
     return {"text": text}
+
+@app.post("/api/lasso/upload")
+def lasso_upload_endpoint(data: LassoImageData):
+    """Save lasso screenshot as lasso.png"""
+    try:
+        return save_lasso_screenshot(data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

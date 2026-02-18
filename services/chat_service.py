@@ -49,7 +49,6 @@ def _build_system_prompt(manual_id: int, step_number: int) -> str:
     except Exception:
         step_description = "No description available for this step."
 
-    # Tools are extracted from the image analysis in step_description
     tools_list = "(Tools mentioned in the step description above)"
 
     return SYSTEM_PROMPT_TEMPLATE.format(
