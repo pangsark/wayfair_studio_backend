@@ -17,7 +17,6 @@ from services.orientation_generator import start_orientation_generation
 from services.step_colorizer import get_step_image_url
 from services.lasso import save_lasso_screenshot, LassoImageData
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 IMAGES_DIR = BASE_DIR / "public" / "images"
 
@@ -73,9 +72,12 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/api/steps/{step_id}/explanation")
-def explanation_endpoint(step_id: int):
-    return get_step_explanation(step_number = step_id)
+@app.get("/api/manuals/{manual_id}/steps/{step_id}/explanation")
+def explanation_endpoint(manual_id: int, step_id: int):
+    return get_step_explanation(
+        manual_id=manual_id,
+        step_number = step_id
+    )
 
 @app.get("/api/steps/{step_id}/image")
 def step_image_endpoint(step_id: int, colorized: bool = False):
