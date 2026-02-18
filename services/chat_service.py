@@ -58,7 +58,6 @@ def _build_system_prompt(manual_id: int, step_number: int) -> str:
         tools_list=tools_list
     )
 
-
 def get_chat_response(
     manual_id: int,
     step_number: int,

@@ -79,13 +79,21 @@ GET /health
 
 Returns `{"status": "ok"}` if the server is running.
 
+### List Manuals
+
+```
+GET /api/manuals
+```
+
+Returns a list of manuals for the switch-manual UI: `[{ "id", "name", "slug" }, ...]`.
+
 ### Step Explanation
 
 ```
-GET /api/steps/{step_id}/explanation
+GET /api/manuals/{manual_id}/steps/{step_id}/explanation
 ```
 
-Returns the description/explanation for a given step.
+Returns the description/explanation for a given step in the specified manual.
 
 ### Step Tools
 

@@ -10,7 +10,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from pathlib import Path
 from services.text_extraction import get_step_explanation, preload_manual_step_explanations
-from services.db import _ensure_table_exists, get_cached_value
+from services.db import _ensure_table_exists, get_cached_value, get_manuals
 from services.db_columns import StepColumn
 from services.chat_service import get_chat_response
 from services.orientation_generator import start_orientation_generation
@@ -73,12 +73,18 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/api/manuals")
+def list_manuals_endpoint():
+    """
+    Return all manuals for the switch-manual UI.
+    Response: list of { "id", "name", "slug" }.
+    """
+    return get_manuals()
+
+
 @app.get("/api/manuals/{manual_id}/steps/{step_id}/explanation")
 def explanation_endpoint(manual_id: int, step_id: int):
-    return get_step_explanation(
-        manual_id=manual_id,
-        step_number = step_id
-    )
+    return get_step_explanation(manual_id=manual_id, step_number=step_id)
 
 
 @app.get("/api/manuals/{manual_id}/steps/{step_id}/checklist")
@@ -96,21 +102,30 @@ def checklist_endpoint(manual_id: int, step_id: int):
     except Exception as e:
         # For any other unexpected errors
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
-    
 
-@app.get("/api/steps/{step_id}/image")
-def step_image_endpoint(step_id: int, colorized: bool = False):
+
+@app.get("/api/manuals/{manual_id}/steps/{step_id}/tools")
+def tools_endpoint(manual_id: int, step_id: int):
+    """
+    Returns the list of tools needed for this step (from DB cache).
+    Response: { "tools": ["tool1", "tool2", ...] } or { "tools": null } if not set.
+    """
+    tools = get_cached_value(manual_id, step_id, StepColumn.TOOLS, returnMetadata=False)
+    return {"tools": tools if tools is not None else None}
+
+
+@app.get("/api/manuals/{manual_id}/steps/{step_id}/image")
+def step_image_endpoint(manual_id: int, step_id: int, colorized: bool = False):
     """
     Returns the image URL for this manual step.
-    
+
     - If colorized=False: returns the base diagram from DB
     - If colorized=True: checks DB cache, falls back to Replicate API
-    
+
     Example test URLs:
       http://localhost:4000/api/manuals/1/steps/1/image
       http://localhost:4000/api/manuals/1/steps/1/image?colorized=true
     """
-    manual_id = 1  # Assuming single manual for now
     try:
         image_url = get_step_image_url(manual_id, step_id, colorized=colorized)
         return {"image_url": image_url, "colorized": colorized}
