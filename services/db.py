@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from typing import Optional
+from typing import List, Optional
 from .db_columns import StepColumn
 
 parent_env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
@@ -18,10 +18,10 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 import json as _dbg_json
 def _dbg_log(hyp, msg, data):
     try:
+        import time
         with open("/Users/aaronzhang/Desktop/wayfair_studio_backend/.cursor/debug.log", "a") as f:
-            # Mask password in URL for security
             safe_data = {k: (v[:20] + "..." if isinstance(v, str) and len(v) > 30 else v) for k, v in data.items()}
-            f.write(_dbg_json.dumps({"hypothesisId": hyp, "location": "db.py", "message": msg, "data": safe_data}) + "\n")
+            f.write(_dbg_json.dumps({"hypothesisId": hyp, "location": "db.py", "message": msg, "data": safe_data, "timestamp": int(time.time() * 1000)}) + "\n")
     except: pass
 # #endregion
 
@@ -92,6 +92,12 @@ def _ensure_table_exists():
                 )
                 """
             )
+            cur.execute("ALTER TABLE steps ADD COLUMN IF NOT EXISTS orientation_text JSONB")
+            # #region agent log
+            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'steps' ORDER BY ordinal_position")
+            steps_cols = [r[0] for r in cur.fetchall()]
+            _dbg_log("H1,H2,H3", "after ensure steps table: columns in steps", {"columns": steps_cols, "has_orientation_text": "orientation_text" in steps_cols})
+            # #endregion
 
 
 def get_cached_value(manual_id: int, step_number: int, column: StepColumn, returnMetadata: bool = True) -> Optional[dict]:
@@ -105,6 +111,11 @@ def get_cached_value(manual_id: int, step_number: int, column: StepColumn, retur
 
     with conn:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            # #region agent log
+            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'steps' ORDER BY ordinal_position")
+            steps_cols = [r[0] for r in cur.fetchall()]
+            _dbg_log("H1,H4,H5", "get_cached_value: columns in steps at query time", {"column_requested": column_name, "columns": steps_cols, "has_requested": column_name in steps_cols})
+            # #endregion
             query = f"""
                 SELECT {column_name}
                 FROM steps WHERE manual_id = %s AND step_number = %s
@@ -194,3 +205,17 @@ def get_product_image_url(manual_id: int) -> Optional[str]:
             if row and row[0]:
                 return row[0]
     return None
+
+
+def get_manuals() -> List[dict]:
+    """Return all manuals with id, name, and slug for the list endpoint."""
+    try:
+        conn = _get_connection()
+    except RuntimeError:
+        return []
+
+    with conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT id, name, slug FROM manuals ORDER BY id")
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]
