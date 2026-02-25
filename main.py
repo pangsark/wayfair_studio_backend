@@ -18,8 +18,8 @@ from services.step_colorizer import get_step_image_url
 from services.lasso import save_lasso_screenshot, LassoImageData
 from services.step_checklist import generate_checklist
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-IMAGES_DIR = BASE_DIR / "public" / "images"
+BASE_DIR = Path(__file__).resolve().parent
+MANUALS_DIR = BASE_DIR / "public" / "manuals"
 
 # Request model for chat endpoint
 class ChatRequest(BaseModel):
@@ -34,11 +34,14 @@ app = FastAPI()
 @app.on_event("startup")
 def startup_event():
     _ensure_table_exists()
-    thread = threading.Thread(
-        target=preload_manual_step_explanations,
-        kwargs={"manual_id": 1},
-        daemon=True,
-    )
+    # Preload step explanations for each manual that has images under public/manuals/<id>/
+    def preload_all_manuals():
+        if not MANUALS_DIR.exists():
+            return
+        for path in MANUALS_DIR.iterdir():
+            if path.is_dir() and path.name.isdigit():
+                preload_manual_step_explanations(manual_id=int(path.name))
+    thread = threading.Thread(target=preload_all_manuals, daemon=True)
     thread.start()
 
 cors_origins = os.getenv("CORS_ORIGIN", "http://localhost:3000").split(",")
@@ -56,16 +59,14 @@ app.add_middleware(
 @app.middleware("http")
 async def add_image_cors_headers(request, call_next):
     response = await call_next(request)
-    if request.url.path.startswith("/images/"):
+    if request.url.path.startswith("/manuals/"):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
         response.headers["Cache-Control"] = "public, max-age=3600"
     return response
 
-# Serve static files (images)
-BASE_DIR = Path(__file__).resolve().parent
-IMAGES_DIR = BASE_DIR / "public" / "images"
-app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
+# Serve static files: public/manuals/<id>/stepN.png at /manuals/<id>/stepN.png
+app.mount("/manuals", StaticFiles(directory=MANUALS_DIR), name="manuals")
 
 
 @app.get("/health")
@@ -166,13 +167,15 @@ def chat_endpoint(manual_id: int, step_id: int, request: ChatRequest):
 
 def get_step_image_path(manual_id: int = 1, step_number: int = None):
     """
-    Helper to get local file path for a given step
+    Helper to get local file path for a given step.
+    Looks under public/manuals/<manual_id>/ for step<N>.png or step<N>.jpg.
     """
-
-    image_path = IMAGES_DIR / f"step{step_number}.png"
-    if not image_path.exists():
-        raise FileNotFoundError(f"Step image not found: {image_path}")
-    return image_path
+    manual_dir = MANUALS_DIR / str(manual_id)
+    for ext in (".png", ".jpg"):
+        image_path = manual_dir / f"step{step_number}{ext}"
+        if image_path.exists():
+            return image_path
+    raise FileNotFoundError(f"Step image not found: {manual_dir}/step{step_number}.png|.jpg")
 
 
 @app.post("/api/orientation/generate")

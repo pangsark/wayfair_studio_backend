@@ -53,7 +53,9 @@ def seed_database():
             manual_id = cur.fetchone()[0]
             print(f"✓ Created/updated manual with id: {manual_id}")
             
-            # Insert the diagram as step 1
+            # Insert the diagram as step 1 (image served from public/manuals/<id>/step1.png)
+            base_url = os.getenv("APP_URL", "http://localhost:4000").rstrip("/")
+            step1_image_url = f"{base_url}/manuals/{manual_id}/step1.png"
             cur.execute("""
                 INSERT INTO steps (manual_id, step_number, description, image_url)
                 VALUES (%s, %s, %s, %s)
@@ -63,7 +65,7 @@ def seed_database():
                 manual_id,
                 1,
                 'Dimensions diagram',
-                'http://localhost:4000/static/images/drawer_diagram.png'
+                step1_image_url
             ))
             print(f"✓ Added step 1 (dimensions diagram) to manual {manual_id}")
     
