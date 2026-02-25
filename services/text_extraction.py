@@ -13,19 +13,20 @@ from .db_columns import StepColumn
 parent_env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 load_dotenv(parent_env_path)
 
-IMAGES_DIR = Path(__file__).resolve().parent.parent / "public" / "images"
+MANUALS_DIR = Path(__file__).resolve().parent.parent / "public" / "manuals"
 
 
-def discover_step_numbers() -> List[int]:
+def discover_step_numbers(manual_id: int) -> List[int]:
     """
-    Find all step numbers that have an image in public/images (step1.png, step2.jpg, etc.).
-    Returns sorted list of step numbers.
+    Find all step numbers that have an image in public/manuals/<manual_id>/ (step1.png, step2.jpg, etc.).
+    Returns sorted list of step numbers for that manual.
     """
-    if not IMAGES_DIR.exists():
+    manual_dir = MANUALS_DIR / str(manual_id)
+    if not manual_dir.exists():
         return []
     step_nums = set()
     pattern = re.compile(r"^step(\d+)\.(png|jpg|jpeg)$", re.IGNORECASE)
-    for path in IMAGES_DIR.iterdir():
+    for path in manual_dir.iterdir():
         if path.is_file():
             m = pattern.match(path.name)
             if m:
@@ -35,13 +36,13 @@ def discover_step_numbers() -> List[int]:
 
 def preload_manual_step_explanations(manual_id: int = 1) -> None:
     """
-    Run get_step_explanation for every step discovered in public/images.
+    Run get_step_explanation for every step discovered in public/manuals/<manual_id>/.
     Intended to be run in a background thread at startup. Skips steps that
     already have a description in the DB. Continues on per-step errors.
     """
-    step_numbers = discover_step_numbers()
+    step_numbers = discover_step_numbers(manual_id)
     if not step_numbers:
-        print("Preload: no step images found in public/images")
+        print(f"Preload: no step images found in public/manuals/{manual_id}")
         return
     print(f"Preload: filling step explanations for manual_id={manual_id}, steps={step_numbers}")
     for step_number in step_numbers:
@@ -64,20 +65,21 @@ def get_step_explanation(manual_id: int = 1, step_number: int = None):
     if cached and cached["description"]:
         return cached
 
-    # Find the image file in public/images
+    # Find the image file in public/manuals/<manual_id>/
+    manual_dir = MANUALS_DIR / str(manual_id)
     image_path = None
     for ext in [".png", ".jpg"]:
-        potential_path = IMAGES_DIR / f"step{step_number}{ext}"
+        potential_path = manual_dir / f"step{step_number}{ext}"
         if potential_path.exists():
             image_path = potential_path
             break
-    
+
     if not image_path:
-        raise FileNotFoundError(f"Step image not found for step {step_number}")
+        raise FileNotFoundError(f"Step image not found for manual {manual_id} step {step_number}")
 
     # Ensure manual and step rows exist so we can store the description later
     base_url = os.getenv("APP_URL", "http://localhost:4000").rstrip("/")
-    image_url = f"{base_url}/images/step{step_number}{image_path.suffix}"
+    image_url = f"{base_url}/manuals/{manual_id}/step{step_number}{image_path.suffix}"
     db_helper.ensure_manual_and_step(manual_id, step_number, image_url)
 
     # Read image file and encode as base64

@@ -15,17 +15,20 @@ import json
 _background_tasks = {}
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-IMAGES_DIR = BASE_DIR / "public" / "images"
+MANUALS_DIR = BASE_DIR / "public" / "manuals"
+
 
 def _get_step_image_path(manual_id: int = 1, step_number: int = None):
     """
-    Helper to get local file path for a given step
+    Helper to get local file path for a given step.
+    Looks under public/manuals/<manual_id>/ for step<N>.png or step<N>.jpg.
     """
-
-    image_path = IMAGES_DIR / f"step{step_number}.png"
-    if not image_path.exists():
-        raise FileNotFoundError(f"Step image not found: {image_path}")
-    return image_path
+    manual_dir = MANUALS_DIR / str(manual_id)
+    for ext in (".png", ".jpg"):
+        image_path = manual_dir / f"step{step_number}{ext}"
+        if image_path.exists():
+            return image_path
+    raise FileNotFoundError(f"Step image not found: {manual_dir}/step{step_number}.png|.jpg")
 
 def start_orientation_generation(manual_id: int, from_step: int, to_step: int) -> None:
     """
