@@ -219,3 +219,42 @@ def get_manuals() -> List[dict]:
             cur.execute("SELECT id, name, slug FROM manuals ORDER BY id")
             rows = cur.fetchall()
             return [dict(r) for r in rows]
+
+
+def get_manual(manual_id: int) -> Optional[dict]:
+    """Return a single manual by id, or None if not found."""
+    try:
+        conn = _get_connection()
+    except RuntimeError:
+        return None
+
+    with conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id, name, slug FROM manuals WHERE id = %s",
+                (manual_id,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def get_steps_for_manual(manual_id: int) -> List[dict]:
+    """Return all steps for a manual (step_number, image_url, description), ordered by step_number."""
+    try:
+        conn = _get_connection()
+    except RuntimeError:
+        return []
+
+    with conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT step_number, image_url, description
+                FROM steps
+                WHERE manual_id = %s
+                ORDER BY step_number
+                """,
+                (manual_id,),
+            )
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]

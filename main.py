@@ -9,8 +9,8 @@ from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
 from pathlib import Path
-from services.text_extraction import get_step_explanation, preload_manual_step_explanations
-from services.db import _ensure_table_exists, get_cached_value, get_manuals
+from services.text_extraction import get_step_explanation, preload_manual_step_explanations, discover_step_numbers
+from services.db import _ensure_table_exists, get_cached_value, get_manuals, get_manual, get_steps_for_manual
 from services.db_columns import StepColumn
 from services.chat_service import get_chat_response
 from services.orientation_generator import start_orientation_generation
@@ -81,6 +81,68 @@ def list_manuals_endpoint():
     Response: list of { "id", "name", "slug" }.
     """
     return get_manuals()
+
+
+@app.get("/api/manuals/{manual_id}")
+def get_manual_endpoint(manual_id: int):
+    """
+    Return a single manual by id.
+    Response: { "id", "name", "slug" }.
+    Uses DB when present; falls back to synthetic manual when public/manuals/<id>/ exists.
+    """
+    manual = get_manual(manual_id)
+    if manual is not None:
+        return manual
+    manual_dir = MANUALS_DIR / str(manual_id)
+    if manual_dir.exists() and manual_dir.is_dir():
+        return {"id": manual_id, "name": f"Manual {manual_id}", "slug": f"manual-{manual_id}"}
+    raise HTTPException(status_code=404, detail="Manual not found")
+
+
+def _normalize_step(s: dict) -> dict:
+    """Ensure each step has id (for UI keys) and consistent shape."""
+    n = s.get("step_number")
+    return {
+        "id": n,
+        "step_number": n,
+        "image_url": s.get("image_url"),
+        "description": s.get("description"),
+    }
+
+
+@app.get("/api/manuals/{manual_id}/steps")
+def list_steps_endpoint(manual_id: int):
+    """
+    Return all steps for a manual.
+    Response: list of { "id", "step_number", "image_url", "description" }.
+    Uses DB when available; falls back to filesystem (public/manuals/<id>/stepN.png|.jpg) when no steps in DB.
+    """
+    manual = get_manual(manual_id)
+    if manual is None:
+        manual_dir = MANUALS_DIR / str(manual_id)
+        if not manual_dir.exists() or not manual_dir.is_dir():
+            raise HTTPException(status_code=404, detail="Manual not found")
+    # manual exists in DB or on disk
+    steps = get_steps_for_manual(manual_id)
+    if not steps:
+        base_url = os.getenv("APP_URL", "http://localhost:4000").rstrip("/")
+        step_nums = discover_step_numbers(manual_id)
+        manual_dir = MANUALS_DIR / str(manual_id)
+        steps = []
+        for n in step_nums:
+            ext = ".png"
+            for e in (".png", ".jpg"):
+                if (manual_dir / f"step{n}{e}").exists():
+                    ext = e
+                    break
+            steps.append({
+                "step_number": n,
+                "image_url": f"{base_url}/manuals/{manual_id}/step{n}{ext}",
+                "description": None,
+            })
+    normalized = [_normalize_step(s) for s in steps]
+    # Return object with "steps" key so frontends using response.steps get the list
+    return {"steps": normalized}
 
 
 @app.get("/api/manuals/{manual_id}/steps/{step_id}/explanation")

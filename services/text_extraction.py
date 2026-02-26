@@ -44,7 +44,7 @@ def preload_manual_step_explanations(manual_id: int = 1) -> None:
     if not step_numbers:
         print(f"Preload: no step images found in public/manuals/{manual_id}")
         return
-    print(f"Preload: filling step explanations for manual_id={manual_id}, steps={step_numbers}")
+    print(f"Preload: filling step explanations for manual_id = {manual_id}, steps = {step_numbers}")
     for step_number in step_numbers:
         try:
             get_step_explanation(manual_id=manual_id, step_number=step_number)
