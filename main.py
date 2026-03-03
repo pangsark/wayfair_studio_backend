@@ -105,6 +105,7 @@ def _normalize_step(s: dict) -> dict:
     return {
         "id": n,
         "step_number": n,
+        "title": f"Step {n}" if n is not None else None,
         "image_url": s.get("image_url"),
         "description": s.get("description"),
     }
