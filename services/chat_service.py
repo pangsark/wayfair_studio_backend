@@ -4,7 +4,7 @@ from typing import Optional
 from dotenv import load_dotenv
 import replicate
 
-from .text_extraction import get_step_explanation
+from .text_extraction import get_step_explanation, discover_step_numbers
 
 load_dotenv()
 
@@ -19,6 +19,10 @@ You are currently helping with:
 - Manual ID: {manual_id}
 - Step {step_number}
 
+## Previous Step (Step {prev_step_number}) — for context
+
+{prev_step_context}
+
 ## Current Step Information
 
 **Description:**
@@ -26,6 +30,10 @@ You are currently helping with:
 
 **Tools needed for this step:**
 {tools_list}
+
+## Next Step (Step {next_step_number}) — for context
+
+{next_step_context}
 
 ## Guidelines
 
@@ -56,14 +64,40 @@ Example format:
 
 def _build_system_prompt(manual_id: int, step_number: int) -> str:
     """
-    Build a system prompt with context from the current step.
+    Build a system prompt with context from the current step, as well as the
+    previous and next steps when they exist.
     """
-    # Get step description (which includes tools info from GPT analysis of the image)
+    valid_steps = set(discover_step_numbers(manual_id))
+
     try:
         explanation_data = get_step_explanation(manual_id=manual_id, step_number=step_number)
         step_description = explanation_data.get("description", "No description available.")
     except Exception:
         step_description = "No description available for this step."
+
+    prev_num = step_number - 1
+    if prev_num in valid_steps:
+        try:
+            prev_data = get_step_explanation(manual_id=manual_id, step_number=prev_num)
+            prev_step_context = prev_data.get("description", "No description available.")
+        except Exception:
+            prev_step_context = "No description available for this step."
+        prev_step_number = str(prev_num)
+    else:
+        prev_step_number = "N/A"
+        prev_step_context = "(none — this is the first step)"
+
+    next_num = step_number + 1
+    if next_num in valid_steps:
+        try:
+            next_data = get_step_explanation(manual_id=manual_id, step_number=next_num)
+            next_step_context = next_data.get("description", "No description available.")
+        except Exception:
+            next_step_context = "No description available for this step."
+        next_step_number = str(next_num)
+    else:
+        next_step_number = "N/A"
+        next_step_context = "(none — this is the last step)"
 
     tools_list = "(Tools mentioned in the step description above)"
 
@@ -71,7 +105,11 @@ def _build_system_prompt(manual_id: int, step_number: int) -> str:
         manual_id=manual_id,
         step_number=step_number,
         step_description=step_description,
-        tools_list=tools_list
+        tools_list=tools_list,
+        prev_step_number=prev_step_number,
+        prev_step_context=prev_step_context,
+        next_step_number=next_step_number,
+        next_step_context=next_step_context,
     )
 
 def get_chat_response(
