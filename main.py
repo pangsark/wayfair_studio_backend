@@ -66,7 +66,8 @@ async def add_image_cors_headers(request, call_next):
     if request.url.path.startswith("/manuals/"):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
-        response.headers["Cache-Control"] = "public, max-age=3600"
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = "public, max-age=3600"
     return response
 
 # Serve static files: public/manuals/<id>/stepN.png at /manuals/<id>/stepN.png
