@@ -1,5 +1,6 @@
 # services/chat_service.py
 import os
+from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 import replicate
@@ -117,7 +118,8 @@ def get_chat_response(
     step_number: int,
     user_message: str,
     conversation_history: Optional[list[dict]] = None,
-    image_url: Optional[str] = None
+    image_url: Optional[str] = None,
+    secondary_image_url: Optional[str] = None
 ) -> dict:
     """
     Get an AI response for a user's assembly question using Replicate's hosted OpenAI.
@@ -129,6 +131,7 @@ def get_chat_response(
         conversation_history: Optional list of previous messages for multi-turn chat
                               Format: [{"role": "user"|"assistant", "content": "..."}]
         image_url: Optional image URL for vision-based questions
+        secondary_image_url: Optional second image URL for additional context (e.g. lassoed crop)
 
     Returns:
         dict with "response" key containing the AI's answer
@@ -154,14 +157,60 @@ def get_chat_response(
         "system_prompt": system_prompt
     }
 
-    # Add image if provided (for vision-based questions)
-    if image_url:
-        input_data["image_input"] = [image_url]
+    # Helper to convert local URL to local file path
+    # Example URL: http://localhost:4000/images/step1.png -> services/../public/images/step1.png
+    # Example URL: http://localhost:4000/lasso_screenshots/lasso.png -> services/../lasso_screenshots/lasso.png
+    def resolve_to_file(url: str) -> Optional[object]:
+        if not url:
+            return None
+        
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            path_parts = parsed.path.strip("/").split("/")
+            
+            base_dir = Path(__file__).resolve().parent.parent
+            
+            if path_parts[0] == "manuals" and len(path_parts) >= 3:
+                # /manuals/{id}/stepN.png -> public/manuals/{id}/stepN.png
+                file_path = base_dir / "public" / "manuals" / path_parts[1] / path_parts[-1]
+            elif path_parts[0] == "lasso_screenshots":
+                file_path = base_dir / "lasso_screenshots" / path_parts[-1]
+            else:
+                return None
+            
+            if file_path.exists():
+                return open(file_path, "rb")
+            return None
+        except Exception as e:
+            print(f"Error resolving URL {url}: {e}")
+            return None
+
+    # Add images if provided
+    images = []
+    for url in [image_url, secondary_image_url]:
+        if url:
+            file_obj = resolve_to_file(url)
+            if file_obj:
+                images.append(file_obj)
+            else:
+                # Fallback to URL if it's not a localhost URL (e.g. external)
+                if "localhost" not in url and "127.0.0.1" not in url:
+                    images.append(url)
+    
+    if images:
+        input_data["image_input"] = images
 
     # Call Replicate API and collect streamed response
     response_parts = []
-    for event in replicate.stream(MODEL, input=input_data):
-        response_parts.append(str(event))
+    try:
+        for event in replicate.stream(MODEL, input=input_data):
+            response_parts.append(str(event))
+    finally:
+        # Close any open file objects
+        for img in images:
+            if hasattr(img, "close"):
+                img.close()
 
     assistant_message = "".join(response_parts)
 
