@@ -26,6 +26,7 @@ class ChatRequest(BaseModel):
     message: str
     history: Optional[list[dict]] = None
     image_url: Optional[str] = None  # Optional image for vision-based questions
+    secondary_image_url: Optional[str] = None  # Optional secondary image
 
 load_dotenv()
 
@@ -68,6 +69,11 @@ async def add_image_cors_headers(request, call_next):
 
 # Serve static files: public/manuals/<id>/stepN.png at /manuals/<id>/stepN.png
 app.mount("/manuals", StaticFiles(directory=MANUALS_DIR), name="manuals")
+
+# Serve lasso screenshots
+LASSO_STORAGE_DIR = Path(__file__).resolve().parent / "lasso_screenshots"
+LASSO_STORAGE_DIR.mkdir(exist_ok=True)
+app.mount("/lasso_screenshots", StaticFiles(directory=LASSO_STORAGE_DIR), name="lasso_screenshots")
 
 
 @app.get("/health")
@@ -222,7 +228,8 @@ def chat_endpoint(manual_id: int, step_id: int, request: ChatRequest):
             step_number=step_id,
             user_message=request.message,
             conversation_history=request.history,
-            image_url=request.image_url
+            image_url=request.image_url,
+            secondary_image_url=request.secondary_image_url
         )
         return result
     except Exception as e:
@@ -283,9 +290,10 @@ def get_orientation_text_endpoint(manual_id: int, step: int):
 
 @app.post("/api/lasso/upload")
 def lasso_upload_endpoint(data: LassoImageData):
-    """Save lasso screenshot as lasso.png"""
+    """Save lasso screenshot and analyze with AI"""
     try:
-        return save_lasso_screenshot(data)
+        from services.lasso import analyze_lasso_image
+        return analyze_lasso_image(data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
