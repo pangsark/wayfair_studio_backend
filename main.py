@@ -2,6 +2,7 @@
 
 import os
 import threading
+import uuid
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -24,7 +25,7 @@ MANUALS_DIR = BASE_DIR / "public" / "manuals"
 # Request model for chat endpoint
 class ChatRequest(BaseModel):
     message: str
-    history: Optional[list[dict]] = None
+    session_id: Optional[str] = None
     image_url: Optional[str] = None  # Optional image for vision-based questions
 
 load_dotenv()
@@ -208,8 +209,8 @@ def chat_endpoint(manual_id: int, step_id: int, request: ChatRequest):
     
     Request body:
         - message: The user's question (required)
-        - history: Optional list of previous messages for multi-turn chat
-                   Format: [{"role": "user"|"assistant", "content": "..."}]
+        - session_id: Optional UUID to resume an existing conversation.
+                      If omitted, a new session is started and the ID is returned.
         - image_url: Optional image URL for vision-based questions
     
     Example:
@@ -217,11 +218,12 @@ def chat_endpoint(manual_id: int, step_id: int, request: ChatRequest):
         {"message": "What tools do I need for this step?"}
     """
     try:
+        session_id = request.session_id or str(uuid.uuid4())
         result = get_chat_response(
             manual_id=manual_id,
             step_number=step_id,
             user_message=request.message,
-            conversation_history=request.history,
+            session_id=session_id,
             image_url=request.image_url
         )
         return result

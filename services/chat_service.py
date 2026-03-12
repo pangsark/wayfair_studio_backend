@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 import replicate
 
 from .text_extraction import get_step_explanation, discover_step_numbers
+from .db import get_session_history, save_chat_message
+
+HISTORY_WINDOW = 10
 
 load_dotenv()
 
@@ -17,28 +20,16 @@ and general furniture assembly process to help users who are building furniture 
 
 You are currently helping with:
 - Manual ID: {manual_id}
-- Step {step_number}
+- The user is currently on **Step {step_number}**
 
-## Previous Step (Step {prev_step_number}) — for context
+## Full Assembly Manual — All Steps
 
-{prev_step_context}
-
-## Current Step Information
-
-**Description:**
-{step_description}
-
-**Tools needed for this step:**
-{tools_list}
-
-## Next Step (Step {next_step_number}) — for context
-
-{next_step_context}
+{all_steps_context}
 
 ## Guidelines
 
 1. Be clear, concise, and encouraging
-2. Reference the specific step details when answering
+2. You have the full manual above — use it to answer questions about any step, not just the current one
 3. If the user seems confused, break down the instructions into smaller sub-steps
 4. Warn about common mistakes when relevant
 5. If you don't have enough information to answer, say so honestly
@@ -64,87 +55,65 @@ Example format:
 
 def _build_system_prompt(manual_id: int, step_number: int) -> str:
     """
-    Build a system prompt with context from the current step, as well as the
-    previous and next steps when they exist.
+    Build a system prompt with descriptions for every step in the manual so the
+    AI can answer questions about any step, not just the current one.
+    Descriptions come from the DB cache (populated at startup), so no AI calls
+    are made here in the normal case.
     """
-    valid_steps = set(discover_step_numbers(manual_id))
+    valid_steps = sorted(discover_step_numbers(manual_id))
 
-    try:
-        explanation_data = get_step_explanation(manual_id=manual_id, step_number=step_number)
-        step_description = explanation_data.get("description", "No description available.")
-    except Exception:
-        step_description = "No description available for this step."
-
-    prev_num = step_number - 1
-    if prev_num in valid_steps:
+    step_sections = []
+    for n in valid_steps:
         try:
-            prev_data = get_step_explanation(manual_id=manual_id, step_number=prev_num)
-            prev_step_context = prev_data.get("description", "No description available.")
+            data = get_step_explanation(manual_id=manual_id, step_number=n)
+            desc = data.get("description", "No description available.")
         except Exception:
-            prev_step_context = "No description available for this step."
-        prev_step_number = str(prev_num)
-    else:
-        prev_step_number = "N/A"
-        prev_step_context = "(none — this is the first step)"
+            desc = "No description available."
+        current_marker = " ← **USER IS CURRENTLY ON THIS STEP**" if n == step_number else ""
+        step_sections.append(f"### Step {n}{current_marker}\n{desc}")
 
-    next_num = step_number + 1
-    if next_num in valid_steps:
-        try:
-            next_data = get_step_explanation(manual_id=manual_id, step_number=next_num)
-            next_step_context = next_data.get("description", "No description available.")
-        except Exception:
-            next_step_context = "No description available for this step."
-        next_step_number = str(next_num)
-    else:
-        next_step_number = "N/A"
-        next_step_context = "(none — this is the last step)"
-
-    tools_list = "(Tools mentioned in the step description above)"
+    all_steps_context = "\n\n".join(step_sections) if step_sections else "No step information available."
 
     return SYSTEM_PROMPT_TEMPLATE.format(
         manual_id=manual_id,
         step_number=step_number,
-        step_description=step_description,
-        tools_list=tools_list,
-        prev_step_number=prev_step_number,
-        prev_step_context=prev_step_context,
-        next_step_number=next_step_number,
-        next_step_context=next_step_context,
+        all_steps_context=all_steps_context,
     )
 
 def get_chat_response(
     manual_id: int,
     step_number: int,
     user_message: str,
-    conversation_history: Optional[list[dict]] = None,
+    session_id: str,
     image_url: Optional[str] = None
 ) -> dict:
     """
     Get an AI response for a user's assembly question using Replicate's hosted OpenAI.
 
+    Conversation history is loaded from the DB using `session_id` and windowed to
+    the last HISTORY_WINDOW messages. Both the user message and assistant reply are
+    persisted to the DB before returning.
+
     Args:
         manual_id: The manual ID
         step_number: The current step number
         user_message: The user's question
-        conversation_history: Optional list of previous messages for multi-turn chat
-                              Format: [{"role": "user"|"assistant", "content": "..."}]
+        session_id: UUID identifying this conversation session
         image_url: Optional image URL for vision-based questions
 
     Returns:
-        dict with "response" key containing the AI's answer
+        dict with "response" and "session_id" keys
     """
     # Build the system prompt with step context
     system_prompt = _build_system_prompt(manual_id, step_number)
 
-    # Build the prompt with conversation history
+    # Load windowed history from DB and append the new user message
+    history = get_session_history(session_id, limit=HISTORY_WINDOW)
     prompt_parts = []
-    
-    if conversation_history:
-        for msg in conversation_history:
-            role = msg.get("role", "user")
-            content = msg.get("content", "")
-            prompt_parts.append(f"{role.capitalize()}: {content}")
-    
+    for msg in history:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        prompt_parts.append(f"{role.capitalize()}: {content}")
     prompt_parts.append(f"User: {user_message}")
     prompt = "\n\n".join(prompt_parts)
 
@@ -158,6 +127,9 @@ def get_chat_response(
     if image_url:
         input_data["image_input"] = [image_url]
 
+    # Persist the user message before calling the AI
+    save_chat_message(session_id, manual_id, step_number, "user", user_message)
+
     # Call Replicate API and collect streamed response
     response_parts = []
     for event in replicate.stream(MODEL, input=input_data):
@@ -165,8 +137,12 @@ def get_chat_response(
 
     assistant_message = "".join(response_parts)
 
+    # Persist the assistant reply
+    save_chat_message(session_id, manual_id, step_number, "assistant", assistant_message)
+
     return {
         "response": assistant_message,
+        "session_id": session_id,
         "manual_id": manual_id,
         "step_number": step_number
     }

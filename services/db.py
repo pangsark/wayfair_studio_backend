@@ -99,6 +99,26 @@ def _ensure_table_exists():
             _dbg_log("H1,H2,H3", "after ensure steps table: columns in steps", {"columns": steps_cols, "has_orientation_text": "orientation_text" in steps_cols})
             # #endregion
 
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id          SERIAL PRIMARY KEY,
+                    session_id  UUID NOT NULL,
+                    manual_id   INTEGER NOT NULL,
+                    step_id     INTEGER NOT NULL,
+                    role        TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+                    content     TEXT NOT NULL,
+                    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_chat_messages_session
+                    ON chat_messages (session_id, created_at)
+                """
+            )
+
 
 def get_cached_value(manual_id: int, step_number: int, column: StepColumn, returnMetadata: bool = True) -> Optional[dict]:
     """Fetch any column for a given manual and step"""
@@ -258,3 +278,62 @@ def get_steps_for_manual(manual_id: int) -> List[dict]:
             )
             rows = cur.fetchall()
             return [dict(r) for r in rows]
+
+
+def get_session_history(session_id: str, limit: int = 10) -> List[dict]:
+    """
+    Return the last `limit` messages for a session, ordered oldest-first
+    so they can be fed directly into the prompt.
+    Each dict has keys: "role", "content".
+    Returns [] if DB is not configured or the session has no messages.
+    """
+    try:
+        conn = _get_connection()
+    except RuntimeError:
+        return []
+
+    with conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT role, content
+                FROM (
+                    SELECT role, content, created_at
+                    FROM chat_messages
+                    WHERE session_id = %s
+                    ORDER BY created_at DESC
+                    LIMIT %s
+                ) sub
+                ORDER BY created_at ASC
+                """,
+                (session_id, limit),
+            )
+            rows = cur.fetchall()
+            return [{"role": r["role"], "content": r["content"]} for r in rows]
+
+
+def save_chat_message(
+    session_id: str,
+    manual_id: int,
+    step_id: int,
+    role: str,
+    content: str,
+) -> None:
+    """
+    Insert a single chat message row. No-ops if DB is not configured.
+    `role` must be 'user' or 'assistant'.
+    """
+    try:
+        conn = _get_connection()
+    except RuntimeError:
+        return
+
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO chat_messages (session_id, manual_id, step_id, role, content)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                (session_id, manual_id, step_id, role, content),
+            )
