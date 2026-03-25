@@ -112,7 +112,57 @@ GET /api/manuals/{manual_id}/steps/{step_id}/image?colorized=false
 Returns the image URL for a step. Set `colorized=true` to get an AI-colorized version.
 
 ---
+### Manual Segmentation API
 
+This project now includes a POST endpoint that can ingest a PDF furniture
+assembly manual and automatically break it into individual step images using
+an AI model (Nano Banana Pro) and computer vision logic.
+
+#### Endpoint
+
+```
+POST /api/manuals/process
+```
+
+- **Content-Type:** `multipart/form-data`
+- **Fields:**
+  - `file` (required) – the PDF file to process
+  - `name` (optional) – human‑readable manual name
+  - `slug` (optional) – URL slug for the manual
+  - `description` (optional) – free‑text description
+
+#### Response
+
+Immediately returns a job identifier:
+
+```json
+{ "job_id": "<uuid>", "status": "processing" }
+```
+
+The frontend can poll `/api/manuals/process/{job_id}` to check the job
+status; the final payload includes the associated `manual_id` and
+`step_count` once the work is complete.
+
+#### Workflow (backend)
+
+1. Save raw PDF to a temporary location
+2. Convert pages to 300 DPI PNGs using `pdf2image`
+3. Call the Nano Banana Pro model via Replicate; the model returns an
+   "annotated" page with colored bounding boxes around each assembly step
+4. Use OpenCV to subtract the annotated image from the clean image, find
+   contours, and compute precise `(x,y,w,h)` crops
+5. Crop the clean page and store each step in `public/manuals/<id>/stepN.png`
+6. Insert step records into the database and mark the manual `COMPLETED`
+
+If the AI fails to detect any boxes on a page the whole page becomes a single
+step.  A missing `REPLICATE_API_TOKEN` is tolerated – the service will fall
+back to treating each page as one step without calling the model.
+
+> **Prerequisites:** The segmentation code depends on `pdf2image` which in
+> turn requires Poppler (`poppler-utils` on Debian/Ubuntu).  Make sure
+> `apt install poppler-utils` is run in the container or host.
+
+---
 ## AI Chat Assistant
 
 The chat endpoint provides an AI-powered assistant to help users with assembly questions. It uses OpenAI's GPT-4.1-mini model via Replicate.

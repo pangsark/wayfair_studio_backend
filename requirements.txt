@@ -3,3 +3,7 @@ uvicorn[standard]
 python-dotenv
 psycopg2
 replicate
+pdf2image
+opencv-python
+requests
+python-multipart
