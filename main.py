@@ -5,6 +5,7 @@ import threading
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
@@ -12,11 +13,13 @@ from pathlib import Path
 from services.text_extraction import get_step_explanation, preload_manual_step_explanations, discover_step_numbers
 from services.db import _ensure_table_exists, get_cached_value, get_manuals, get_manual, get_steps_for_manual
 from services.db_columns import StepColumn
-from services.chat_service import get_chat_response
+from services.chat_service import get_chat_response, get_chat_response_stream
 from services.orientation_generator import start_orientation_generation
 from services.step_colorizer import get_step_image_url
 from services.lasso import save_lasso_screenshot, LassoImageData
 from services.step_checklist import generate_checklist
+from services.transcription import transcribe_audio
+from services.tts import synthesize_speech
 
 BASE_DIR = Path(__file__).resolve().parent
 MANUALS_DIR = BASE_DIR / "public" / "manuals"
@@ -295,4 +298,61 @@ def lasso_upload_endpoint(data: LassoImageData):
         return analyze_lasso_image(data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class TranscribeRequest(BaseModel):
+    audio: str  # base64-encoded WAV audio
+
+
+@app.post("/api/transcribe")
+def transcribe_endpoint(data: TranscribeRequest):
+    """Transcribe audio using Replicate's Whisper model."""
+    try:
+        result = transcribe_audio(data.audio)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class TTSRequest(BaseModel):
+    text: str
+    voice: str = "am_adam"
+
+
+@app.post("/api/tts")
+def tts_endpoint(data: TTSRequest):
+    """Convert text to speech using Kokoro-82m."""
+    try:
+        audio_url = synthesize_speech(data.text, data.voice)
+        return {"audio_url": audio_url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/manuals/{manual_id}/steps/{step_number}/chat-stream")
+def chat_stream_endpoint(manual_id: int, step_number: int, body: ChatRequest):
+    """Stream a chat response as Server-Sent Events."""
+    def event_generator():
+        try:
+            for chunk in get_chat_response_stream(
+                manual_id=manual_id,
+                step_number=step_number,
+                user_message=body.message,
+                conversation_history=body.history,
+                image_url=body.image_url,
+                secondary_image_url=body.secondary_image_url,
+            ):
+                # SSE format: each event is "data: <text>\n\n"
+                yield f"data: {chunk}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: [ERROR] {str(e)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
 
