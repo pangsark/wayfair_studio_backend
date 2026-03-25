@@ -45,6 +45,13 @@ You are currently helping with:
 5. If you don't have enough information to answer, say so honestly
 6. Do not add generic closing sentences (e.g. "Make sure you have these ready before starting…", "Let me know if you need more help!", "Feel free to ask if you have questions"). End with the direct answer.
 
+## Voice-Friendly Response Length — CRITICAL
+You MUST keep every response under 60 words. This is a hard limit — responses are read aloud via text-to-speech.
+- Do NOT exceed 60 words. Count them.
+- Use short, direct sentences. No filler, no preamble, no "Sure!" or "Great question!".
+- Skip markdown formatting (bold, bullets, numbered lists) — just use plain short sentences.
+- Get straight to the answer. If the answer requires more detail, tell the user to ask a follow-up.
+
 ## Response formatting
 
 - When listing steps, parts, or options, always use a proper list format—do not put everything in one paragraph.
@@ -219,3 +226,74 @@ def get_chat_response(
         "manual_id": manual_id,
         "step_number": step_number
     }
+
+
+def get_chat_response_stream(
+    manual_id: int,
+    step_number: int,
+    user_message: str,
+    conversation_history: Optional[list[dict]] = None,
+    image_url: Optional[str] = None,
+    secondary_image_url: Optional[str] = None
+):
+    """
+    Stream an AI response as text chunks using Replicate's streaming API.
+    Yields individual text chunks as they arrive.
+    """
+    system_prompt = _build_system_prompt(manual_id, step_number)
+
+    prompt_parts = []
+    if conversation_history:
+        for msg in conversation_history:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            prompt_parts.append(f"{role.capitalize()}: {content}")
+    prompt_parts.append(f"User: {user_message}")
+    prompt = "\n\n".join(prompt_parts)
+
+    input_data = {
+        "prompt": prompt,
+        "system_prompt": system_prompt
+    }
+
+    # Helper to convert local URL to local file path
+    def resolve_to_file(url: str) -> Optional[object]:
+        if not url:
+            return None
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            path_parts = parsed.path.strip("/").split("/")
+            base_dir = Path(__file__).resolve().parent.parent
+            if path_parts[0] == "manuals" and len(path_parts) >= 3:
+                file_path = base_dir / "public" / "manuals" / path_parts[1] / path_parts[-1]
+            elif path_parts[0] == "lasso_screenshots":
+                file_path = base_dir / "lasso_screenshots" / path_parts[-1]
+            else:
+                return None
+            if file_path.exists():
+                return open(file_path, "rb")
+            return None
+        except Exception as e:
+            print(f"Error resolving URL {url}: {e}")
+            return None
+
+    images = []
+    for url in [image_url, secondary_image_url]:
+        if url:
+            file_obj = resolve_to_file(url)
+            if file_obj:
+                images.append(file_obj)
+            elif "localhost" not in url and "127.0.0.1" not in url:
+                images.append(url)
+
+    if images:
+        input_data["image_input"] = images
+
+    try:
+        for event in replicate.stream(MODEL, input=input_data):
+            yield str(event)
+    finally:
+        for img in images:
+            if hasattr(img, "close"):
+                img.close()
