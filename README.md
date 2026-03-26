@@ -117,7 +117,7 @@ Returns the image URL for a step. Set `colorized=true` to get an AI-colorized ve
 
 The chat endpoint provides an AI-powered assistant to help users with assembly questions. It uses OpenAI's GPT-4.1-mini model via Replicate.
 
-### Endpoint
+### Endpoint (non-stream)
 
 ```
 POST /api/manuals/{manual_id}/steps/{step_id}/chat
@@ -130,16 +130,60 @@ POST /api/manuals/{manual_id}/steps/{step_id}/chat
 | `message` | string | Yes | The user's question |
 | `history` | array | No | Previous conversation messages for multi-turn chat |
 | `image_url` | string | No | Image URL for vision-based questions |
+| `secondary_image_url` | string | No | Optional second image URL |
+| `intent` | string | No | Preset intent: `explain_step`, `orientation`, `stuck` |
 
 ### Response
 
 ```json
 {
-  "response": "AI-generated answer...",
+  "payload": {
+    "type": "procedural",
+    "summary": "string",
+    "steps": ["string"]
+  },
   "manual_id": 1,
   "step_number": 1
 }
 ```
+
+### Endpoint (SSE stream)
+
+```
+POST /api/manuals/{manual_id}/steps/{step_number}/chat-stream
+```
+
+Response is `text/event-stream` with newline-safe single-line JSON frames:
+
+- `data: {"event":"final","payload":{...}}\n\n`
+- `data: [DONE]\n\n`
+- On failure: `data: [ERROR] <message>\n\n`
+
+### Structured payload schema
+
+The backend validates model output to one of these shapes:
+
+```json
+{
+  "type": "procedural",
+  "summary": "string",
+  "steps": ["string", "string"],
+  "common_mistakes": ["string"]
+}
+```
+
+```json
+{
+  "type": "qa",
+  "answer": "string",
+  "why": "string"
+}
+```
+
+Notes:
+- For `procedural`, `common_mistakes` is optional.
+- If `intent` is not `stuck`, the backend enforces that `common_mistakes` is omitted.
+- Total words across all string fields are capped at `<= 150`.
 
 ### Examples
 
@@ -176,6 +220,20 @@ curl -X POST http://localhost:4000/api/manuals/1/steps/1/chat \
   }'
 ```
 
+**With preset intent (frontend quick actions):**
+
+```bash
+curl -N -X POST http://localhost:4000/api/manuals/1/steps/1/chat-stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "I am stuck on this step.",
+    "intent": "stuck",
+    "history": [
+      {"role": "user", "content": "I am stuck on this step."}
+    ]
+  }'
+```
+
 ### How It Works
 
 1. The chat service gathers context from the current step:
@@ -192,6 +250,24 @@ The AI receives:
 - Step description (what the user should do)
 - Tools needed for the step
 - Guidelines for being a helpful assembly assistant
+- Optional `intent` to steer output (`explain_step`, `orientation`, `stuck`)
+
+### Frontend changes required
+
+To support click-to-send first-message prompts:
+
+1. Add three quick actions in chat UI:
+   - `Explain this step`
+   - `How should parts be oriented?`
+   - `I'm stuck`
+2. When clicked, call `/chat-stream` with:
+   - `intent`: `explain_step` | `orientation` | `stuck`
+   - `message`: human-readable text
+   - `history`: include that user message (if your current chat state already does this)
+3. Renderer updates:
+   - Parse SSE `data` JSON and read `event === "final"` then `payload`.
+   - If `payload.type === "procedural"` and `payload.common_mistakes` is missing, omit that UI section.
+   - Keep backward compatibility if you still consume `/chat` by reading `response.payload`.
 
 ---
 

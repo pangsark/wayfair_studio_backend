@@ -1,6 +1,7 @@
 # main.py (in your backend root)
 
 import os
+import json
 import threading
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,6 +31,7 @@ class ChatRequest(BaseModel):
     history: Optional[list[dict]] = None
     image_url: Optional[str] = None  # Optional image for vision-based questions
     secondary_image_url: Optional[str] = None  # Optional secondary image
+    intent: Optional[str] = None  # Optional preset intent: explain_step | orientation | stuck
 
 load_dotenv()
 
@@ -232,7 +234,8 @@ def chat_endpoint(manual_id: int, step_id: int, request: ChatRequest):
             user_message=request.message,
             conversation_history=request.history,
             image_url=request.image_url,
-            secondary_image_url=request.secondary_image_url
+            secondary_image_url=request.secondary_image_url,
+            intent=request.intent,
         )
         return result
     except Exception as e:
@@ -341,12 +344,14 @@ def chat_stream_endpoint(manual_id: int, step_number: int, body: ChatRequest):
                 conversation_history=body.history,
                 image_url=body.image_url,
                 secondary_image_url=body.secondary_image_url,
+                intent=body.intent,
             ):
-                # SSE format: each event is "data: <text>\n\n"
-                yield f"data: {chunk}\n\n"
+                # SSE format: each event is "data: <single-line JSON>\n\n"
+                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
-            yield f"data: [ERROR] {str(e)}\n\n"
+            error_text = str(e).replace("\n", " ").replace("\r", " ")
+            yield f"data: [ERROR] {error_text}\n\n"
 
     return StreamingResponse(
         event_generator(),
