@@ -41,19 +41,23 @@ You are currently helping with:
 
 1. Be clear, concise, and encouraging
 2. Reference the specific step details when answering
-3. If the user seems confused, break down the instructions into smaller sub-steps
+3. Only break instructions into multiple ordered sub-steps when the user needs a walkthrough or is clearly confused. For short factual questions, answer in plain prose (`qa`)—do not default to a numbered list.
 4. Warn about common mistakes when relevant
 5. If you don't have enough information to answer, say so honestly
 6. Do not add generic closing sentences (e.g. "Make sure you have these ready before starting…", "Let me know if you need more help!", "Feel free to ask if you have questions"). End with the direct answer.
 
-## Output Type (MUST)
-Choose exactly one:
-- `procedural` when the user is asking for how to do the assembly at this step (or what to do next), including tools, sub-steps, parts identification, or common mistakes.
-- `qa` when the user is asking a non-procedural question that needs a short explanation rather than an instruction sequence.
+## Output Type (MUST) — choose `qa` vs `procedural`
+Use `type: "qa"` when ANY of these apply (answer in prose; no numbered `steps`):
+- Questions about where, which hole, which part, what goes here, screw or fastener placement, orientation of a single part, one tool, or yes/no.
+- Quick clarifications that fit in a short paragraph.
+
+Use `type: "procedural"` only when the user needs multiple ordered actions (true step-by-step), a walkthrough, or intent is `explain_step` / `stuck` and a sequence genuinely helps. You may use `procedural` with only `summary` and no `steps` for a prose overview without a numbered list.
+
+Do not use `procedural` with a `steps` array for simple "where do I put…" questions—use `qa` instead.
 
 ## Intent Guidance (MUST)
 Preset intent for this message: `{intent}` (one of: explain_step, orientation, stuck, none).
-- If intent is `explain_step`: prefer `procedural` and do NOT include `common_mistakes`.
+- If intent is `explain_step`: prefer `procedural` with optional `steps` (omit `steps` or use multiple steps only if a sequence is needed), or `qa` for a concise paragraph. Do NOT include `common_mistakes`.
 - If intent is `orientation`: prefer concise orientation-focused guidance; usually `qa` unless stepwise orientation instructions are needed.
 - If intent is `stuck`: use `procedural`; include `common_mistakes` only when it helps troubleshoot.
 - If intent is `none`: use your best judgment and include `common_mistakes` only when explicitly helpful.
@@ -61,14 +65,14 @@ Preset intent for this message: `{intent}` (one of: explain_step, orientation, s
 ## Output Format (MUST)
 Output ONLY valid JSON. No markdown fences, no surrounding text, no commentary.
 
-If `type` is `procedural`, output this exact JSON schema:
+If `type` is `procedural`, use this shape (required: `type`, `summary`; optional: `steps`, `common_mistakes`):
 {{
   "type": "procedural",
-  "summary": "string",
-  "steps": ["string", "string"]
+  "summary": "string"
 }}
+Include `steps` only when you need a numbered sequence of actions (each string is one step). Omit `steps` entirely for summary-only prose.
 Optional field (include only when relevant, mainly when intent is `stuck`):
-{{ "common_mistakes": ["string"] }}
+`"common_mistakes": ["string"]`
 
 If `type` is `qa`, output this exact JSON schema:
 {{
@@ -78,11 +82,11 @@ If `type` is `qa`, output this exact JSON schema:
 }}
 
 ## Hard Word Cap (CRITICAL)
-The total word count across all string fields in the selected JSON object MUST be <= 150 words.
+The total word count across all string fields in the selected JSON object MUST be <= 100 words.
 If the content is too long, shorten it until it fits.
 """
 
-STRUCTURED_WORD_CAP = 150
+STRUCTURED_WORD_CAP = 100
 
 
 def _count_words(text: str) -> int:
@@ -121,26 +125,34 @@ def _validate_structured_payload(payload: Any, intent: Optional[str]) -> tuple[b
 
     if payload_type == "procedural":
         allowed_keys = {"type", "summary", "steps", "common_mistakes"}
-        required_keys = {"type", "summary", "steps"}
+        required_keys = {"type", "summary"}
         keys = set(payload.keys())
         if not required_keys.issubset(keys) or not keys.issubset(allowed_keys):
-            return False, "Procedural JSON must include type, summary, steps and only optional common_mistakes."
+            return False, "Procedural JSON must include type and summary; optional steps and common_mistakes only."
 
         summary = payload.get("summary")
         steps = payload.get("steps")
+        if steps is None:
+            steps = []
         common_mistakes = payload.get("common_mistakes", [])
+        if common_mistakes is None:
+            common_mistakes = []
 
         if not isinstance(summary, str) or not summary.strip():
             return False, "`summary` must be a non-empty string."
-        if not isinstance(steps, list) or not steps or any(not isinstance(s, str) for s in steps):
-            return False, "`steps` must be a non-empty list of strings."
+        if "steps" in payload:
+            if not isinstance(steps, list) or any(not isinstance(s, str) for s in steps):
+                return False, "`steps` must be a list of strings when present."
+            if steps and not all(s.strip() for s in steps):
+                return False, "`steps` entries must be non-empty strings."
         if not isinstance(common_mistakes, list) or any(not isinstance(s, str) for s in common_mistakes):
             return False, "`common_mistakes` must be a list of strings."
         normalized_intent = _normalize_intent(intent)
         if normalized_intent != "stuck" and common_mistakes:
             return False, "`common_mistakes` must be omitted unless intent is `stuck`."
 
-        word_text = " ".join([summary] + steps + common_mistakes)
+        step_parts = [s for s in steps] if isinstance(steps, list) and steps else []
+        word_text = " ".join([summary] + step_parts + common_mistakes)
         if _count_words(word_text) > STRUCTURED_WORD_CAP:
             return False, f"Word cap exceeded (>{STRUCTURED_WORD_CAP} words) in procedural JSON."
 
