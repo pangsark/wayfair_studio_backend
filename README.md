@@ -117,6 +117,8 @@ Returns the image URL for a step. Set `colorized=true` to get an AI-colorized ve
 
 The chat endpoint provides an AI-powered assistant to help users with assembly questions. It uses OpenAI's GPT-4.1-mini model via Replicate.
 
+**Frontend integration (contract, SSE, rendering, intents):** see [docs/FRONTEND_CHAT_INTEGRATION.md](docs/FRONTEND_CHAT_INTEGRATION.md).
+
 ### Endpoint (non-stream)
 
 ```
@@ -167,9 +169,16 @@ The backend validates model output to one of these shapes:
 {
   "type": "procedural",
   "summary": "string",
-  "steps": ["string", "string"],
-  "common_mistakes": ["string"]
+  "steps": ["string", "string"]
 }
+```
+
+`steps` is optional. Omit `steps` (or use an empty list) when the answer should be prose only—no numbered list. Include `steps` only for true ordered actions.
+
+Optional on `procedural`:
+
+```json
+"common_mistakes": ["string"]
 ```
 
 ```json
@@ -181,9 +190,14 @@ The backend validates model output to one of these shapes:
 ```
 
 Notes:
-- For `procedural`, `common_mistakes` is optional.
+- For `procedural`, `steps` and `common_mistakes` are optional.
 - If `intent` is not `stuck`, the backend enforces that `common_mistakes` is omitted.
-- Total words across all string fields are capped at `<= 150`.
+- Total words across all string fields are capped (see `STRUCTURED_WORD_CAP` in `services/chat_service.py`, typically 100).
+
+### Frontend rendering (lists vs prose)
+
+- **`qa`**: Render `answer` (and optional `why`) as normal paragraphs, not as a numbered list.
+- **`procedural`**: Show `summary` as the lead. Render **`steps` as a numbered list only if** `steps` exists and `steps.length > 0`. If there are no steps, show `summary` only.
 
 ### Examples
 
@@ -267,6 +281,7 @@ To support click-to-send first-message prompts:
 3. Renderer updates:
    - Parse SSE `data` JSON and read `event === "final"` then `payload`.
    - If `payload.type === "procedural"` and `payload.common_mistakes` is missing, omit that UI section.
+   - If `payload.type === "procedural"` and `payload.steps` is missing or empty, do not render a numbered list; show `summary` only.
    - Keep backward compatibility if you still consume `/chat` by reading `response.payload`.
 
 ---
