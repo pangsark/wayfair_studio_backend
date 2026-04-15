@@ -74,7 +74,8 @@ def _ensure_table_exists():
                     name TEXT NOT NULL,
                     slug TEXT UNIQUE NOT NULL,
                     description TEXT,
-                    product_image_url TEXT
+                    product_image_url TEXT,
+                    status TEXT
                 )
                 """)
 
@@ -89,6 +90,20 @@ def _ensure_table_exists():
                     image_url TEXT NOT NULL,
                     orientation_text JSONB,
                     UNIQUE(manual_id, step_number)
+                )
+                """
+            )
+            cur.execute(
+               """
+               CREATE TABLE IF NOT EXISTS pages (
+                   id SERIAL PRIMARY KEY,
+                   manual_id INTEGER NOT NULL REFERENCES manuals(id) ON DELETE CASCADE,
+                   page_number INTEGER NOT NULL,
+                   image_url TEXT NOT NULL,
+                   suggested_boxes JSONB,
+                   final_boxes JSONB,
+                   status TEXT,
+                   UNIQUE(manual_id, page_number)
                 )
                 """
             )
@@ -258,3 +273,42 @@ def get_steps_for_manual(manual_id: int) -> List[dict]:
             )
             rows = cur.fetchall()
             return [dict(r) for r in rows]
+
+def get_pages_for_manual(manual_id: int) -> List[dict]:
+    """Return all pages for a manual (page_number, image_url, boxes), ordered by page_number."""
+    try:
+        conn = _get_connection()
+    except RuntimeError:
+        return []
+
+    with conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+              """
+                SELECT page_number, image_url, suggested_boxes, final_boxes, status
+                FROM pages
+                WHERE manual_id = %s
+                ORDER BY page_number
+                """,
+               (manual_id,),
+            )
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]
+        
+def update_page_boxes(manual_id: int, page_number: int, boxes: list) -> None:
+    """Update bounding boxes for a specific manual page."""
+    try:
+        conn = _get_connection()
+    except RuntimeError:
+        return
+    
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE pages
+                SET final_boxes = %s, status = 'CONFIRMED'
+                WHERE manual_id = %s AND page_number = %s
+                """,
+                (psycopg2.extras.Json(boxes), manual_id, page_number),
+            )
