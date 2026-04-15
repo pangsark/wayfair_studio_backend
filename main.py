@@ -3,7 +3,7 @@
 import os
 import json
 import threading
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
@@ -11,10 +11,12 @@ from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
 from pathlib import Path
+import tempfile
 from services.text_extraction import get_step_explanation, preload_manual_step_explanations, discover_step_numbers
-from services.db import _ensure_table_exists, get_cached_value, get_manuals, get_manual, get_steps_for_manual
+from services.db import _ensure_table_exists, get_cached_value, get_manuals, get_manual, get_steps_for_manual, get_pages_for_manual, update_page_boxes
 from services.db_columns import StepColumn
 from services.chat_service import get_chat_response, get_chat_response_stream
+from services.manual_processor import start_manual_processing, get_job_status, segment_manual_into_steps
 from services.orientation_generator import start_orientation_generation
 from services.step_colorizer import get_step_image_url
 from services.lasso import save_lasso_screenshot, LassoImageData
@@ -362,3 +364,61 @@ def chat_stream_endpoint(manual_id: int, step_number: int, body: ChatRequest):
         },
     )
 
+# Manual processing / segmentation endpoints
+
+
+@app.post("/api/manuals/process")
+def process_manual_endpoint(
+   file: UploadFile = File(...),
+   name: str = Form(None),
+   slug: str = Form(None),
+   description: str = Form(None),
+):
+   """
+   Ingest a PDF manual and segment it into steps using Nano Banana Pro
+
+   On success, endpoint returns a job ID
+   Frontend can poll `/api/manuals/process/{job_id}` for status
+   Once job completes, database has manual record + series of
+   step images under `public/manuals/<manual_id>/stepN.png`
+   """
+   # save uploaded pdf to temporary location
+   tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+   contents = file.file.read()
+   tmp.write(contents)
+   tmp.flush()
+   tmp_path = Path(tmp.name)
+
+   job_id = start_manual_processing(tmp_path, name, slug, description)
+   return {"job_id": job_id, "status": "processing"}
+
+from typing import List
+
+@app.get("/api/manuals/{manual_id}/pages")
+def get_manual_pages_endpoint(manual_id: int):
+   """Return all pages for a manual with their bounding boxes."""
+   pages = get_pages_for_manual(manual_id)
+   return {"pages": pages}
+
+class ConfirmSegmentationRequest(BaseModel):
+   pages: List[dict] # list of {page_number: int, boxes: list}
+
+@app.post("/api/manuals/{manual_id}/confirm-segmentation")
+def confirm_segmentation_endpoint(manual_id: int, request: ConfirmSegmentationRequest):
+   """
+   Receive confirmed/edited bounding boxes and trigger Phase 2 (cropping).
+   """
+   for p in request.pages:
+       update_page_boxes(manual_id, p["page_number"], p["boxes"])
+  
+   # trigger Phase 2 synchronously for now, or background it
+   total_steps = segment_manual_into_steps(manual_id)
+   return {"status": "completed", "step_count": total_steps}
+
+@app.get("/api/manuals/process/{job_id}")
+def get_process_status(job_id: str):
+   """Return the current status of a manual-processing job."""
+   job = get_job_status(job_id)
+   if job is None:
+       raise HTTPException(status_code=404, detail="Job not found")
+   return job
