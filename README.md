@@ -69,6 +69,15 @@ VALUES
 
 ---
 
+## Wobble Setup
+
+This only has to be done once. Set up a local HTTP server for the wobble viewer by running
+
+```bash
+cd services/spatial-viewer
+python3 -m http.server 8000
+```
+
 ## API Endpoints
 
 ### Health Check
