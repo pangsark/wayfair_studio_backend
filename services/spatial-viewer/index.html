@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Spatial Scene Viewer</title>
+
+<style>
+body { margin: 0; overflow: hidden; background: #ffffff; cursor: grab; }
+body.dragging { cursor: grabbing; }
+
+#zoom-bar {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 10;
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 999px;
+  padding: 14px 10px;
+}
+#zoom-bar button {
+  width: 28px; height: 28px;
+  border-radius: 50%; border: none;
+  background: rgba(0,0,0,0.07); color: #444;
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+#zoom-bar button:hover { background: rgba(0,0,0,0.14); }
+
+#zoom-slider {
+  writing-mode: vertical-lr; direction: rtl;
+  appearance: slider-vertical; -webkit-appearance: slider-vertical;
+  width: 4px; height: 120px;
+  accent-color: #444;
+}
+
+/* Lock button */
+#lock-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10;
+
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(0,0,0,0.1);
+  background: rgba(0,0,0,0.06);
+  color: #444;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#lock-btn.locked {
+  background: rgba(140, 100, 255, 0.15);
+  border-color: rgba(140, 100, 255, 0.4);
+  color: rgb(120, 80, 255);
+}
+
+#lock-btn:hover {
+  background: rgba(0,0,0,0.12);
+}
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+
+<body>
+
+<div id="zoom-bar">
+  <button id="zoom-in">+</button>
+  <input id="zoom-slider" type="range" min="-0.75" max="0.75" step="0.05" value="0">
+  <button id="zoom-out">−</button>
+</div>
+
+<button id="lock-btn" class="locked">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path d="M7 10V7a5 5 0 0 1 10 0v3" stroke="currentColor" stroke-width="2"/>
+    <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+  </svg>
+</button>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+// ── Setup ─────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.DirectionalLight(0xffffff, 1).position.set(1,2,3));
+scene.add(new THREE.AmbientLight(0xffffff, 1));
+
+// ── Params ─────────────────────────────────────────────
+const params    = new URLSearchParams(window.location.search);
+const manualId  = params.get('manualId') ?? '1';
+const step      = params.get('step') ?? '1';
+
+const BACKEND   = 'http://localhost:4000';
+const glbUrl    = `${BACKEND}/manuals/${manualId}/step${step}.glb`;
+
+// ── Load Model ─────────────────────────────────────────
+const loader = new GLTFLoader();
+loader.load(glbUrl, (gltf) => {
+  const model = gltf.scene;
+
+  model.traverse((child) => {
+    if (!child.isMesh) return;
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+    mats.forEach(m => {
+      m.transparent = true;
+      m.alphaTest   = 0.5;
+      m.side        = THREE.DoubleSide;
+    });
+  });
+
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+
+  model.position.sub(center);
+  model.scale.setScalar(2 / Math.max(size.x, size.y, size.z));
+  scene.add(model);
+});
+
+// ── Camera Controls ───────────────────────────────────
+let radius = 3;
+let theta = 0;
+let phi = 0;
+
+let currentTheta = theta;
+let currentPhi = phi;
+
+const target = new THREE.Vector3(0,0,0);
+
+// Lock behavior
+let isLocked = true;
+
+const maxTheta = Math.PI / 5;
+const basePhi = 0;
+const curveStrength = 0.3;
+
+// Drag
+let isDragging = false, lastX = 0, lastY = 0;
+const sensitivity = 0.003;
+
+renderer.domElement.addEventListener("mousedown", (e) => {
+  isDragging = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  document.body.classList.add("dragging");
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (!isDragging) return;
+
+  theta -= (e.clientX - lastX) * sensitivity * 2.5;
+  phi   -= (e.clientY - lastY) * sensitivity * 2.5;
+
+  if (isLocked) {
+    theta = Math.max(-maxTheta, Math.min(maxTheta, theta));
+
+    const t = theta / maxTheta;
+    phi = basePhi + curveStrength * Math.pow(Math.abs(t), 3);
+  } else {
+    phi = Math.max(0.01, Math.min(Math.PI - 0.01, phi));
+  }
+
+  lastX = e.clientX;
+  lastY = e.clientY;
+});
+
+window.addEventListener("mouseup", () => {
+  isDragging = false;
+  document.body.classList.remove("dragging");
+});
+
+// ── Lock Button ───────────────────────────────────────
+const lockBtn = document.getElementById("lock-btn");
+
+function applyLockState() {
+  if (isLocked) {
+    lockBtn.classList.add("locked");
+    theta = 0;
+    phi = basePhi;
+  } else {
+    lockBtn.classList.remove("locked");
+  }
+}
+
+lockBtn.addEventListener("click", () => {
+  isLocked = !isLocked;
+  applyLockState();
+});
+
+// Apply initial locked state
+applyLockState();
+
+// ── Zoom ──────────────────────────────────────────────
+let zoomOffset = 0;
+const zoomSlider = document.getElementById("zoom-slider");
+
+function updateRadius() {
+  radius = Math.max(1, Math.min(10, 3 - zoomOffset * 2));
+}
+
+zoomSlider.addEventListener("input", () => {
+  zoomOffset = parseFloat(zoomSlider.value);
+  updateRadius();
+});
+
+// ── Animate ───────────────────────────────────────────
+function animate() {
+  requestAnimationFrame(animate);
+
+  const lerpSpeed = isDragging ? 0.35 : 0.08;
+
+  currentTheta += (theta - currentTheta) * lerpSpeed;
+  currentPhi   += (phi   - currentPhi)   * lerpSpeed;
+
+  const x = radius * Math.sin(currentPhi) * Math.sin(currentTheta);
+  const y = radius * Math.cos(currentPhi);
+  const z = radius * Math.sin(currentPhi) * Math.cos(currentTheta);
+
+  camera.position.set(x, y, z);
+  camera.lookAt(target);
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// ── Resize ────────────────────────────────────────────
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+
+</body>
+</html>
