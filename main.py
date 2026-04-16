@@ -321,7 +321,7 @@ def transcribe_endpoint(data: TranscribeRequest):
 
 class TTSRequest(BaseModel):
     text: str
-    voice: str = "am_adam"
+    voice: str = "af_nova"
 
 
 @app.post("/api/tts")

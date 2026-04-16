@@ -6,7 +6,7 @@ KOKORO_MODEL = "jaaari/kokoro-82m"
 KOKORO_VERSION = "f559560eb822dc509045f3921a1921234918b91739db4bf3daab2169b71c7a13"
 
 # Default voice — American English female
-DEFAULT_VOICE = "am_adam"
+DEFAULT_VOICE = "af_nova"
 
 
 def synthesize_speech(text: str, voice: str = DEFAULT_VOICE) -> str:
