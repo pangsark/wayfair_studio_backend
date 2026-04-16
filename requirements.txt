@@ -6,3 +6,4 @@ replicate
 pdf2image
 opencv-python
 requests
+python-multipart
