@@ -82,6 +82,10 @@ LASSO_STORAGE_DIR = Path(__file__).resolve().parent / "lasso_screenshots"
 LASSO_STORAGE_DIR.mkdir(exist_ok=True)
 app.mount("/lasso_screenshots", StaticFiles(directory=LASSO_STORAGE_DIR), name="lasso_screenshots")
 
+# Serve spatial viewer
+SPATIAL_VIEWER_DIR = Path(__file__).resolve().parent / "services" / "spatial-viewer"
+app.mount("/spatial_viewer", StaticFiles(directory=SPATIAL_VIEWER_DIR, html=True), name="spatial_viewer")
+
 
 @app.get("/health")
 def health():
