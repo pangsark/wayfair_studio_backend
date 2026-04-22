@@ -133,6 +133,8 @@ loader.load(glbUrl, (gltf) => {
     mats.forEach(m => {
       m.transparent = true;
       m.alphaTest   = 0.5;
+      m.depthWrite = true;
+      m.depthTest = true;
       m.side        = THREE.DoubleSide;
     });
   });
