@@ -120,7 +120,7 @@ const manualId  = params.get('manualId') ?? '1';
 const step      = params.get('step') ?? '1';
 
 const BACKEND   = 'http://localhost:4000';
-const glbUrl    = `${BACKEND}/manuals/${manualId}/step${step}.glb`;
+const glbUrl = `${BACKEND}/manuals/${manualId}/step${step}.glb?t=${Date.now()}`;
 
 // ── Load Model ─────────────────────────────────────────
 const loader = new GLTFLoader();
