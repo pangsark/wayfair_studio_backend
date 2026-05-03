@@ -1,8 +1,19 @@
 # services/text_extraction.py
+"""
+Step description extraction using GPT-4o vision (via Replicate).
+
+get_step_explanation() is the main entry point. It:
+  1. Checks the DB cache (steps.description); returns cached value if present
+  2. Reads the step image from public/manuals/<id>/stepN.png
+  3. Calls GPT-4o via Replicate with the image + a description prompt
+  4. Stores the result back into the DB for subsequent calls
+
+preload_manual_step_explanations() is called at startup in a background thread
+to warm the cache for all existing manuals so the first user request is fast.
+"""
 import os
 import re
 import replicate
-import base64
 from pathlib import Path
 from typing import List
 from dotenv import load_dotenv
@@ -82,33 +93,21 @@ def get_step_explanation(manual_id: int = 1, step_number: int = None):
     image_url = f"{base_url}/manuals/{manual_id}/step{step_number}{image_path.suffix}"
     db_helper.ensure_manual_and_step(manual_id, step_number, image_url)
 
-    # Read image file and encode as base64
-    with open(image_path, "rb") as f:
-        image_bytes = f.read()
-        image_data = base64.b64encode(image_bytes).decode("utf-8")
-    
-    media_type = "image/png" if image_path.suffix == ".png" else "image/jpeg"
-    
-    print(f"DEBUG: Using image from: {image_path}")
-    print(f"DEBUG: Image file size: {len(image_bytes)} bytes")
-    print(f"DEBUG: Base64 size: {len(image_data)} characters")
-    print(f"DEBUG: Media type: {media_type}")
-    
-    # Call GPT-4o via Replicate using stream with file object
+    # Call GPT-4o via Replicate with the step image
     response_parts = []
-    
-    try:
-        for event in replicate.stream(
-            "openai/gpt-4o",
-            input={
-                "image_input": [open(image_path, "rb")],
-                "prompt": "Provide a detailed step-by-step description of the assembly instructions shown in this image. Be clear and concise."
-            }
-        ):
-            response_parts.append(str(event))
-    except Exception as e:
-        print(f"Warning: replicate call failed: {e}")
-        raise
+    with open(image_path, "rb") as img_file:
+        try:
+            for event in replicate.stream(
+                "openai/gpt-4o",
+                input={
+                    "image_input": [img_file],
+                    "prompt": "Provide a detailed step-by-step description of the assembly instructions shown in this image. Be clear and concise."
+                }
+            ):
+                response_parts.append(str(event))
+        except Exception as e:
+            print(f"Warning: replicate call failed: {e}")
+            raise
     
     description_text = "".join(response_parts).strip()
     

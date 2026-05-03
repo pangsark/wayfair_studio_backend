@@ -1,3 +1,12 @@
+"""
+Text-to-speech synthesis using Kokoro-82m via Replicate.
+
+synthesize_speech() strips markdown formatting from the input text, calls the
+Kokoro model, and returns the URL of the generated audio file.
+
+Default voice: af_nova (American English female). Other Kokoro voice IDs can be
+passed via the `voice` parameter (e.g. af_bella, am_adam).
+"""
 import traceback
 import replicate
 

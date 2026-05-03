@@ -1,6 +1,20 @@
 """
-Background service for generating and storing orientation text.
-Runs Replicate analysis asynchronously and stores results in database.
+Orientation change detection between consecutive assembly steps.
+
+Compares two step images using GPT-4.1-mini and determines whether the user
+needs to rotate or flip the assembly before proceeding to the next step.
+
+Workflow:
+  start_orientation_generation()  — starts a daemon thread; returns immediately
+  _generate_and_store_orientation() — background worker; stores JSON in DB
+  analyze_orientation_change()    — makes the Replicate call; returns
+                                    {show_popup: bool, message: str}
+
+Results are cached in steps.orientation_text (JSONB). The frontend calls
+POST /api/orientation/generate when advancing to a new step (fires-and-forgets),
+then GET /api/orientation/text to retrieve the cached result before actually
+navigating. If generation hasn't finished yet, text is null and navigation
+proceeds without a popup.
 """
 import threading
 import os
@@ -116,8 +130,8 @@ If an orientation change IS required, return:
 
 
 def analyze_orientation_change(
-    current_image_url: str,
-    next_image_url: str,
+    current_image_path: Path,
+    next_image_path: Path,
 ) -> Dict[str, str]:
 
     safe_default = {"show_popup": False, "message": ""}
@@ -125,21 +139,18 @@ def analyze_orientation_change(
     if not os.getenv("REPLICATE_API_TOKEN"):
         return safe_default
 
-    input_data = {
-        "system_prompt": SYSTEM_PROMPT,
-        "prompt": PROMPT,
-        "image_input": [
-            open(current_image_url,"rb"),
-            open(next_image_url,"rb"),
-        ],
-        "max_output_tokens": 200,
-    }
-
     response_parts = []
 
     try:
-        for event in replicate.stream(MODEL, input=input_data):
-            response_parts.append(str(event))
+        with open(current_image_path, "rb") as cur_img, open(next_image_path, "rb") as nxt_img:
+            input_data = {
+                "system_prompt": SYSTEM_PROMPT,
+                "prompt": PROMPT,
+                "image_input": [cur_img, nxt_img],
+                "max_output_tokens": 200,
+            }
+            for event in replicate.stream(MODEL, input=input_data):
+                response_parts.append(str(event))
     except Exception as e:
         print(f"Warning: replicate call failed: {e}")
         return safe_default

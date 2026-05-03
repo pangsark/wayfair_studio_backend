@@ -1,338 +1,378 @@
-# Wayfair Studio Backend
+# Wayfair Studio — Backend
 
-Backend API for the Wayfair Studio assembly assistant application.
+FastAPI backend powering the Wayfair Studio furniture assembly assistant.
 
-## Getting Started
+## Overview
 
-First, set up the python env:
+This service provides:
+- REST API for manuals, steps, and AI-powered assembly assistance
+- PDF ingestion pipeline: upload a PDF → AI segments it into per-step images
+- AI chat assistant (GPT-4.1-mini via Replicate) with structured JSON output and SSE streaming
+- Voice transcription (Whisper large-v3) and text-to-speech (Kokoro-82m)
+- Lasso screenshot analysis with contextual question generation
+- 3D model viewer served as a static Three.js page
+- Orientation-change detection between consecutive assembly steps
+
+---
+
+## Architecture
+
+```
+main.py                        FastAPI app, all routes, startup preloading
+services/
+  db.py                        PostgreSQL via psycopg2; safe no-ops when DB is absent
+  db_columns.py                StepColumn enum (cacheable per-step columns)
+  chat_service.py              GPT-4.1-mini chat with validated qa / procedural JSON output
+  text_extraction.py           GPT-4o vision → step descriptions; preloaded at startup
+  manual_processor.py          PDF → page PNGs → Nano Banana AI → bounding boxes → step crops
+  orientation_generator.py     GPT-4.1-mini compares consecutive step images for rotation cues
+  step_checklist.py            GPT-4o → per-step action checklist
+  step_colorizer.py            Nano Banana reference-based diagram colorization
+  lasso.py                     Saves lasso crops; GPT-4o analyzes the selection in context
+  transcription.py             Replicate Whisper large-v3 audio transcription
+  tts.py                       Kokoro-82m text-to-speech via Replicate
+  spatial-viewer/index.html    Three.js GLB viewer, served as static files at /spatial_viewer/
+scripts/
+  seed_manual.py               One-off DB seed script for initial test data
+public/manuals/                Step images served at /manuals/<id>/stepN.png
+lasso_screenshots/             Lasso screenshot storage
+static/images/                 Reference product images for colorization
+docs/
+  FRONTEND_CHAT_INTEGRATION.md Chat contract docs
+```
+
+---
+
+## Prerequisites
+
+- Python 3.10+
+- Docker (for PostgreSQL)
+- **Poppler** — required by `pdf2image` for the PDF ingestion pipeline
+  - macOS: `brew install poppler`
+  - Ubuntu/Debian: `apt install poppler-utils`
+
+---
+
+## Setup
 
 ```bash
 python3 -m venv venv
-
 source venv/bin/activate
-
 pip install -r requirements.txt
 ```
 
-If fastapi is not installed, run:
-```bash
-pip install "fastapi" "uvicorn[standard]" "python-dotenv"
-```
-
-Then to start the backend services:
-```bash
-uvicorn main:app --reload --port 4000
-```
+---
 
 ## Environment Variables
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root (never commit this file):
 
 ```env
 PORT=4000
 CORS_ORIGIN=http://localhost:3000
 REPLICATE_API_TOKEN=your-replicate-api-token
-DATABASE_URL=postgresql://wayfair:wayfair123@localhost:5432/wayfairstudio
+DATABASE_URL=postgresql://wayfair:wayfair123@localhost:5433/wayfairstudio
+APP_URL=http://localhost:4000
 ```
+
+| Variable | Description | Default |
+|---|---|---|
+| `PORT` | Port the server listens on | `4000` |
+| `CORS_ORIGIN` | Comma-separated allowed origins | `http://localhost:3000` |
+| `REPLICATE_API_TOKEN` | Replicate API key — required for all AI features | — |
+| `DATABASE_URL` | PostgreSQL connection string | — |
+| `APP_URL` | Public base URL used when constructing image URLs stored in the DB | `http://localhost:4000` |
+
+> **Security note:** The `.gitignore` excludes `.env`. Ensure a fresh token is issued before handover — any token previously committed must be considered compromised.
+
+---
 
 ## Database Setup
 
-This only has to be done once
+Start the bundled PostgreSQL 15 container (once only):
 
 ```bash
 docker compose up -d
 ```
 
-Update the `.env`:
+The app automatically creates all required tables on startup via `_ensure_table_exists()` in `services/db.py`. No manual migrations are needed.
+
+The Docker Compose file maps the container's port 5432 to host port **5433**, so the connection string uses port 5433:
 
 ```
-DATABASE_URL=postgresql://wayfair:wayfair123@localhost:5432/wayfairstudio
+DATABASE_URL=postgresql://wayfair:wayfair123@localhost:5433/wayfairstudio
 ```
 
-Add some dummy data:
+To seed initial test data:
 
 ```bash
-psql -h localhost -U wayfair -d wayfairstudio
+python scripts/seed_manual.py
+```
+
+Or manually via psql:
+
+```bash
+psql -h localhost -p 5433 -U wayfair -d wayfairstudio
 ```
 
 ```sql
-INSERT INTO manuals (name, slug, description)
-VALUES ('Test Manual', 'test-manual', 'This is a sample manual.');
-```
-
-```sql
+INSERT INTO manuals (name, slug) VALUES ('Test Manual', 'test-manual');
 INSERT INTO steps (manual_id, step_number, image_url)
-VALUES 
-(1, 1, 'https://example.com/step1.jpg'),
-(1, 2, 'https://example.com/step2.jpg');
+VALUES (1, 1, 'http://localhost:4000/manuals/1/step1.png');
 ```
 
 ---
 
-## API Endpoints
+## Run
 
-### Health Check
-
-```
-GET /health
+```bash
+uvicorn main:app --reload --port 4000
 ```
 
-Returns `{"status": "ok"}` if the server is running.
-
-### List Manuals
-
-```
-GET /api/manuals
-```
-
-Returns a list of manuals for the switch-manual UI: `[{ "id", "name", "slug" }, ...]`.
-
-### Step Explanation
-
-```
-GET /api/manuals/{manual_id}/steps/{step_id}/explanation
-```
-
-Returns the description/explanation for a given step in the specified manual.
-
-### Step Tools
-
-```
-GET /api/steps/{step_id}/tools
-```
-
-Returns the list of tools needed for a given step.
-
-### Step Image
-
-```
-GET /api/manuals/{manual_id}/steps/{step_id}/image?colorized=false
-```
-
-Returns the image URL for a step. Set `colorized=true` to get an AI-colorized version.
+Visit `http://localhost:4000/health` to confirm the server is up.
 
 ---
-### Manual Segmentation API
 
-This project now includes a POST endpoint that can ingest a PDF furniture
-assembly manual and automatically break it into individual step images using
-an AI model (Nano Banana Pro) and computer vision logic.
+## API Reference
 
-#### Endpoint
+### Health
 
-```
-POST /api/v1/manuals/process
-```
-
-- **Content-Type:** `multipart/form-data`
-- **Fields:**
-  - `file` (required) – the PDF file to process
-  - `name` (optional) – human‑readable manual name
-  - `slug` (optional) – URL slug for the manual
-  - `description` (optional) – free‑text description
-
-#### Response
-
-Immediately returns a job identifier:
-
-```json
-{ "job_id": "<uuid>", "status": "processing" }
-```
-
-The frontend can poll `/api/v1/manuals/process/{job_id}` to check the job
-status; the final payload includes the associated `manual_id` and
-`step_count` once the work is complete.
-
-#### Workflow (backend)
-
-1. Save raw PDF to a temporary location
-2. Convert pages to 300 DPI PNGs using `pdf2image`
-3. Call the Nano Banana Pro model via Replicate; the model returns an
-   "annotated" page with colored bounding boxes around each assembly step
-4. Use OpenCV to subtract the annotated image from the clean image, find
-   contours, and compute precise `(x,y,w,h)` crops
-5. Crop the clean page and store each step in `public/manuals/<id>/stepN.png`
-6. Insert step records into the database and mark the manual `COMPLETED`
-
-If the AI fails to detect any boxes on a page the whole page becomes a single
-step.  A missing `REPLICATE_API_TOKEN` is tolerated – the service will fall
-back to treating each page as one step without calling the model.
-
-> **Prerequisites:** The segmentation code depends on `pdf2image` which in
-> turn requires Poppler (`poppler-utils` on Debian/Ubuntu).  Make sure
-> `apt install poppler-utils` is run in the container or host.
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Returns `{"status": "ok"}` |
 
 ---
-## AI Chat Assistant
 
-The chat endpoint provides an AI-powered assistant to help users with assembly questions. It uses OpenAI's GPT-4.1-mini model via Replicate.
+### Manuals
 
-**Frontend integration (contract, SSE, rendering, intents):** see [docs/FRONTEND_CHAT_INTEGRATION.md](docs/FRONTEND_CHAT_INTEGRATION.md).
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/manuals` | List all manuals `[{id, name, slug}]` |
+| `GET` | `/api/manuals/{id}` | Get a single manual by ID |
+| `POST` | `/api/manuals/process` | Upload PDF (`multipart/form-data`), start background ingestion. Returns `{job_id, status}` |
+| `GET` | `/api/manuals/process/{job_id}` | Poll ingestion job status |
+| `GET` | `/api/manuals/{id}/pages` | List pages with suggested and confirmed bounding boxes |
+| `POST` | `/api/manuals/{id}/confirm-segmentation` | Submit confirmed/edited bounding boxes → triggers Phase 2 (crop step images) |
 
-### Endpoint (non-stream)
-
-```
-POST /api/manuals/{manual_id}/steps/{step_id}/chat
-```
-
-### Request Body
+**POST `/api/manuals/process` fields (multipart/form-data):**
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `message` | string | Yes | The user's question |
-| `history` | array | No | Previous conversation messages for multi-turn chat |
-| `image_url` | string | No | Image URL for vision-based questions |
-| `secondary_image_url` | string | No | Optional second image URL |
-| `intent` | string | No | Preset intent: `explain_step`, `orientation`, `stuck` |
+|---|---|---|---|
+| `file` | PDF file | Yes | The PDF manual to process |
+| `name` | string | No | Human-readable name |
+| `slug` | string | No | URL slug |
+| `description` | string | No | Free-text description |
 
-### Response
+---
+
+### Steps
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/manuals/{id}/steps` | List steps. Uses DB if available, falls back to filesystem scan |
+| `GET` | `/api/manuals/{id}/steps/{step}/explanation` | AI-generated step description (cached in DB) |
+| `GET` | `/api/manuals/{id}/steps/{step}/checklist` | AI-generated action checklist (not cached — regenerated each call) |
+| `GET` | `/api/manuals/{id}/steps/{step}/tools` | Tool list from DB cache |
+| `GET` | `/api/manuals/{id}/steps/{step}/image` | Step image URL. Add `?colorized=true` for AI-colorized version |
+
+---
+
+### Chat
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/manuals/{id}/steps/{step}/chat` | Non-streaming chat response |
+| `POST` | `/api/manuals/{id}/steps/{step}/chat-stream` | SSE streaming chat response |
+
+**Request body (both endpoints):**
 
 ```json
 {
-  "payload": {
-    "type": "procedural",
-    "summary": "string",
-    "steps": ["string"]
-  },
-  "manual_id": 1,
-  "step_number": 1
+  "message": "string (required)",
+  "history": [{"role": "user|assistant", "content": "string"}],
+  "image_url": "string (optional — step image URL for vision context)",
+  "secondary_image_url": "string (optional — lasso crop URL for focused context)",
+  "intent": "explain_step | orientation | stuck (optional)"
 }
 ```
 
-### Endpoint (SSE stream)
-
-```
-POST /api/manuals/{manual_id}/steps/{step_number}/chat-stream
-```
-
-Response is `text/event-stream` with newline-safe single-line JSON frames:
-
-- `data: {"event":"final","payload":{...}}\n\n`
-- `data: [DONE]\n\n`
-- On failure: `data: [ERROR] <message>\n\n`
-
-### Structured payload schema
-
-The backend validates model output to one of these shapes:
+**Response payload — two shapes:**
 
 ```json
+// Q&A (short factual answer)
+{"type": "qa", "answer": "string", "why": "string (optional)"}
+
+// Procedural (step-by-step guidance)
 {
   "type": "procedural",
   "summary": "string",
-  "steps": ["string", "string"]
+  "steps": ["string"],          // optional — omit for prose-only answers
+  "common_mistakes": ["string"] // optional — only included when intent is "stuck"
 }
 ```
 
-`steps` is optional. Omit `steps` (or use an empty list) when the answer should be prose only—no numbered list. Include `steps` only for true ordered actions.
-
-Optional on `procedural`:
+Non-streaming response envelope:
 
 ```json
-"common_mistakes": ["string"]
+{"payload": {...}, "manual_id": 1, "step_number": 1}
 ```
+
+SSE stream format:
+
+```
+data: {"event":"final","payload":{...}}\n\n
+data: [DONE]\n\n
+data: [ERROR] <message>\n\n  (on failure)
+```
+
+**Word cap:** All string fields combined must not exceed 100 words (enforced by `STRUCTURED_WORD_CAP` in `chat_service.py`).
+
+**Intent behavior:**
+- `explain_step` — prefers a concise procedural summary or prose paragraph; no `common_mistakes`
+- `orientation` — orientation-focused guidance
+- `stuck` — procedural with `common_mistakes` when helpful
+- `none` (default) — model's best judgment; `common_mistakes` omitted unless clearly helpful
+
+---
+
+### Orientation
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/orientation/generate` | Start background orientation analysis. Query params: `manual_id`, `from_step`, `to_step`. Returns `{status: "started"|"completed"}` |
+| `GET` | `/api/orientation/text` | Retrieve cached orientation JSON. Query params: `manual_id`, `step`. Returns `{text: null}` or `{text: "{\"show_popup\":true,\"message\":\"...\"}"}` |
+
+---
+
+### Lasso
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/lasso/upload` | Upload a lasso crop and analyze it |
+
+**Request body:**
 
 ```json
-{
-  "type": "qa",
-  "answer": "string",
-  "why": "string"
-}
+{"image_data": "base64 PNG string", "step": 1, "manual_id": 1}
 ```
 
-Notes:
-- For `procedural`, `steps` and `common_mistakes` are optional.
-- If `intent` is not `stuck`, the backend enforces that `common_mistakes` is omitted.
-- Total words across all string fields are capped (see `STRUCTURED_WORD_CAP` in `services/chat_service.py`, typically 100).
+**Response:**
 
-### Frontend rendering (lists vs prose)
-
-- **`qa`**: Render `answer` (and optional `why`) as normal paragraphs, not as a numbered list.
-- **`procedural`**: Show `summary` as the lead. Render **`steps` as a numbered list only if** `steps` exists and `steps.length > 0`. If there are no steps, show `summary` only.
-
-### Examples
-
-**Basic question:**
-
-```bash
-curl -X POST http://localhost:4000/api/manuals/1/steps/1/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "What tools do I need for this step?"}'
+```json
+{"success": true, "summary": "string", "questions": ["string", "string"], "image_url": "string"}
 ```
 
-**Multi-turn conversation:**
+---
 
-```bash
-curl -X POST http://localhost:4000/api/manuals/1/steps/1/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "Can you explain that in more detail?",
-    "history": [
-      {"role": "user", "content": "How do I attach the panels?"},
-      {"role": "assistant", "content": "Insert panel 02 into the slots on panels 01..."}
-    ]
-  }'
+### Voice
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/transcribe` | Transcribe audio. Body: `{"audio": "base64 string (data URI or raw)"}`. Returns `{"text": "string"}` |
+| `POST` | `/api/tts` | Text-to-speech. Body: `{"text": "string", "voice": "af_nova"}`. Returns `{"audio_url": "string"}` |
+
+Available TTS voices follow the Kokoro-82m voice naming convention (e.g. `af_nova`, `af_bella`).
+
+---
+
+### Static File Mounts
+
+| URL prefix | Source directory | Contents |
+|---|---|---|
+| `/manuals/*` | `public/manuals/` | Step images (`stepN.png`) and 3D models (`stepN.glb`) |
+| `/lasso_screenshots/*` | `lasso_screenshots/` | Saved lasso crop screenshots |
+| `/spatial_viewer/*` | `services/spatial-viewer/` | Three.js GLB viewer page |
+
+---
+
+## PDF Ingestion Pipeline
+
+Uploading a manual runs a two-phase pipeline:
+
+### Phase 1 — PDF → Page Images + Bounding Box Suggestions
+
+Triggered by `POST /api/manuals/process`. Runs in a background thread.
+
+1. Convert each PDF page to a 300 DPI PNG via `pdf2image`
+2. Send each page image to **Nano Banana 2** (`google/nano-banana-2`) on Replicate with a prompt instructing it to draw magenta rectangles around each assembly step
+3. Use OpenCV to diff the annotated image against the original, detect magenta contours, extract `(x, y, w, h)` bounding boxes, and filter overlapping/noise boxes
+4. Store page PNGs and suggested boxes in the `pages` table (status: `SUGGESTED`)
+5. Job status transitions to `pending_segmentation`
+
+If `REPLICATE_API_TOKEN` is not set, the model call is skipped and each page becomes a single step.
+
+### Phase 2 — Confirmed Boxes → Cropped Step Images
+
+Triggered by `POST /api/manuals/{id}/confirm-segmentation` after the user reviews/edits boxes in the frontend Segmentation Editor.
+
+1. Frontend POSTs the confirmed bounding boxes (one set per page)
+2. Backend crops each box from the original page PNG, saves `stepN.png` files under `public/manuals/<id>/`
+3. Inserts step records into the `steps` table
+
+---
+
+## AI Models Used
+
+| Model | Provider | Usage |
+|---|---|---|
+| `openai/gpt-4o` | Replicate | Step explanation (vision), lasso crop analysis, checklist generation |
+| `openai/gpt-4.1-mini` | Replicate | Chat assistant, orientation change detection |
+| `google/nano-banana-2` | Replicate | PDF segmentation — annotates page images with step bounding boxes |
+| `google/nano-banana` | Replicate | Reference-based diagram colorization |
+| `openai/whisper` (large-v3) | Replicate | Audio transcription |
+| `jaaari/kokoro-82m` | Replicate | Text-to-speech synthesis |
+
+All models are called via the [Replicate Python client](https://github.com/replicate/replicate-python) using either `replicate.run()` (blocking) or `replicate.stream()` (streaming).
+
+---
+
+## Database Schema
+
+```sql
+manuals (
+  id               SERIAL PRIMARY KEY,
+  name             TEXT NOT NULL,
+  slug             TEXT UNIQUE NOT NULL,
+  description      TEXT,
+  product_image_url TEXT,   -- reference image used for colorization
+  status           TEXT     -- PROCESSING | PENDING_SEGMENTATION | COMPLETED
+)
+
+steps (
+  id               SERIAL PRIMARY KEY,
+  manual_id        INTEGER REFERENCES manuals(id) ON DELETE CASCADE,
+  step_number      INTEGER NOT NULL,
+  description      TEXT,          -- AI-generated description, cached after first call
+  tools            TEXT[],        -- tool list, cached
+  image_url        TEXT NOT NULL,
+  orientation_text JSONB,         -- {show_popup: bool, message: string}, cached
+  UNIQUE(manual_id, step_number)
+)
+
+pages (
+  id               SERIAL PRIMARY KEY,
+  manual_id        INTEGER REFERENCES manuals(id) ON DELETE CASCADE,
+  page_number      INTEGER NOT NULL,
+  image_url        TEXT NOT NULL,
+  suggested_boxes  JSONB,  -- AI-suggested [{x,y,w,h}]
+  final_boxes      JSONB,  -- user-confirmed [{x,y,w,h}]
+  status           TEXT,   -- SUGGESTED | CONFIRMED
+  UNIQUE(manual_id, page_number)
+)
 ```
 
-**With image (vision):**
+The `db.py` module follows a "safe no-op" pattern: every function catches `RuntimeError` from `_get_connection()` and returns a sensible default (`None`, `[]`, or silently skips) when no `DATABASE_URL` is configured.
 
-```bash
-curl -X POST http://localhost:4000/api/manuals/1/steps/1/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "What part is highlighted in this diagram?",
-    "image_url": "https://example.com/step1-diagram.jpg"
-  }'
-```
+---
 
-**With preset intent (frontend quick actions):**
+## Known Issues / Technical Debt
 
-```bash
-curl -N -X POST http://localhost:4000/api/manuals/1/steps/1/chat-stream \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "I am stuck on this step.",
-    "intent": "stuck",
-    "history": [
-      {"role": "user", "content": "I am stuck on this step."}
-    ]
-  }'
-```
-
-### How It Works
-
-1. The chat service gathers context from the current step:
-   - Step description from `text_extraction.py`
-   - Required tools list
-2. Builds a system prompt with assembly assistant guidelines
-3. Sends the user's question + context to GPT-4.1-mini via Replicate
-4. Returns the AI's response
-
-### Context Provided to AI
-
-The AI receives:
-- Current manual ID and step number
-- Step description (what the user should do)
-- Tools needed for the step
-- Guidelines for being a helpful assembly assistant
-- Optional `intent` to steer output (`explain_step`, `orientation`, `stuck`)
-
-### Frontend changes required
-
-To support click-to-send first-message prompts:
-
-1. Add three quick actions in chat UI:
-   - `Explain this step`
-   - `How should parts be oriented?`
-   - `I'm stuck`
-2. When clicked, call `/chat-stream` with:
-   - `intent`: `explain_step` | `orientation` | `stuck`
-   - `message`: human-readable text
-   - `history`: include that user message (if your current chat state already does this)
-3. Renderer updates:
-   - Parse SSE `data` JSON and read `event === "final"` then `payload`.
-   - If `payload.type === "procedural"` and `payload.common_mistakes` is missing, omit that UI section.
-   - If `payload.type === "procedural"` and `payload.steps` is missing or empty, do not render a numbered list; show `summary` only.
-   - Keep backward compatibility if you still consume `/chat` by reading `response.payload`.
+| Issue | Location | Impact |
+|---|---|---|
+| Hardcoded debug log path (`/Users/aaronzhang/Desktop/...`) | `services/db.py` — `_dbg_log` function and call sites | No functional impact (wrapped in try/except), but should be removed before production |
+| In-memory job tracker | `manual_processor.py` — `JOBS` dict | Job state is lost on server restart; workers that survive a restart will have no visible status |
+| Lasso file overwrite | `services/lasso.py` — always writes `lasso_screenshots/lasso.png` | Concurrent users overwrite each other's lasso screenshots |
+| Colorization caching disabled | `services/step_colorizer.py` — `get_colorized_image_from_db` always returns `None` | Every `/image?colorized=true` request regenerates via Replicate; can be slow and costly |
 
 ---
 
@@ -340,16 +380,34 @@ To support click-to-send first-message prompts:
 
 ```
 wayfair_studio_backend/
-├── main.py                 # FastAPI app and endpoints
-├── requirements.txt        # Python dependencies
-├── docker-compose.yml      # PostgreSQL database
-├── .env                    # Environment variables
+├── main.py                         FastAPI application, all routes, startup
+├── requirements.txt                Python dependencies
+├── docker-compose.yml              PostgreSQL 15 container (port 5433 on host)
+├── .env                            Environment variables (gitignored — do not commit)
 ├── services/
-│   ├── chat_service.py     # AI chat assistant logic
-│   ├── text_extraction.py  # Step descriptions and tools
-│   ├── step_colorizer.py   # Image colorization via Replicate
-│   ├── db.py               # Database operations
-│   └── db_columns.py       # Database column enums
-└── static/
-    └── images/             # Static image assets
+│   ├── __init__.py
+│   ├── db.py                       Database CRUD operations via psycopg2
+│   ├── db_columns.py               StepColumn enum for cacheable DB columns
+│   ├── chat_service.py             AI chat: prompt building, Replicate call, JSON validation
+│   ├── text_extraction.py          Vision-based step description generation and caching
+│   ├── manual_processor.py         PDF ingestion pipeline (Phase 1 + Phase 2)
+│   ├── orientation_generator.py    Consecutive-step orientation analysis
+│   ├── step_checklist.py           AI-generated per-step action checklist
+│   ├── step_colorizer.py           Reference-based diagram colorization
+│   ├── lasso.py                    Lasso crop upload, storage, and GPT-4o analysis
+│   ├── transcription.py            Whisper audio-to-text transcription
+│   ├── tts.py                      Kokoro-82m text-to-speech synthesis
+│   └── spatial-viewer/
+│       └── index.html              Standalone Three.js GLB viewer
+├── scripts/
+│   └── seed_manual.py              One-off database seed script
+├── public/
+│   └── manuals/                    Per-manual step images and 3D models
+│       ├── 1/                      step1.png … stepN.png, step1.glb … stepN.glb
+│       └── 2/
+├── lasso_screenshots/              Saved lasso crop screenshots
+├── static/
+│   └── images/                     Reference product images (colored_drawer.png, etc.)
+└── docs/
+    └── FRONTEND_CHAT_INTEGRATION.md  Chat API contract documentation
 ```

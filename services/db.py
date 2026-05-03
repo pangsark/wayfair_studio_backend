@@ -1,3 +1,16 @@
+"""
+Database access layer for Wayfair Studio.
+
+All public functions follow a "safe no-op" pattern: if DATABASE_URL is not
+set or psycopg2 is unavailable, they return sensible defaults (None, [], or
+silently skip writes) rather than raising. This lets the application run in a
+database-less environment for local development with filesystem-only manuals.
+
+Tables managed here:
+  manuals  — manual metadata
+  steps    — per-step data with AI-generated caches (description, orientation_text)
+  pages    — per-page data used during PDF ingestion (suggested/confirmed boxes)
+"""
 import os
 from dotenv import load_dotenv
 from typing import List, Optional
@@ -14,7 +27,9 @@ except Exception:
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# #region agent log
+# NOTE: _dbg_log and its call sites below are leftover development instrumentation.
+# They write to a hardcoded local path and have no effect in other environments
+# (all calls are wrapped in try/except). Remove before production deployment.
 import json as _dbg_json
 def _dbg_log(hyp, msg, data):
     try:
@@ -23,7 +38,6 @@ def _dbg_log(hyp, msg, data):
             safe_data = {k: (v[:20] + "..." if isinstance(v, str) and len(v) > 30 else v) for k, v in data.items()}
             f.write(_dbg_json.dumps({"hypothesisId": hyp, "location": "db.py", "message": msg, "data": safe_data, "timestamp": int(time.time() * 1000)}) + "\n")
     except: pass
-# #endregion
 
 def _get_connection():
     # region agent log
@@ -108,11 +122,6 @@ def _ensure_table_exists():
                 """
             )
             cur.execute("ALTER TABLE steps ADD COLUMN IF NOT EXISTS orientation_text JSONB")
-            # #region agent log
-            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'steps' ORDER BY ordinal_position")
-            steps_cols = [r[0] for r in cur.fetchall()]
-            _dbg_log("H1,H2,H3", "after ensure steps table: columns in steps", {"columns": steps_cols, "has_orientation_text": "orientation_text" in steps_cols})
-            # #endregion
 
 
 def get_cached_value(manual_id: int, step_number: int, column: StepColumn, returnMetadata: bool = True) -> Optional[dict]:
@@ -126,11 +135,6 @@ def get_cached_value(manual_id: int, step_number: int, column: StepColumn, retur
 
     with conn:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-            # #region agent log
-            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'steps' ORDER BY ordinal_position")
-            steps_cols = [r[0] for r in cur.fetchall()]
-            _dbg_log("H1,H4,H5", "get_cached_value: columns in steps at query time", {"column_requested": column_name, "columns": steps_cols, "has_requested": column_name in steps_cols})
-            # #endregion
             query = f"""
                 SELECT {column_name}
                 FROM steps WHERE manual_id = %s AND step_number = %s

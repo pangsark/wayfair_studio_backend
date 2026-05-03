@@ -1,4 +1,16 @@
 # services/step_colorizer.py
+"""
+Diagram colorization using Nano Banana (google/nano-banana) via Replicate.
+
+get_step_image_url() is the public entry point:
+  - colorized=False → returns the base diagram URL from the DB
+  - colorized=True  → calls Replicate with the step diagram + a product
+                       reference image; returns the colorized URL (not cached)
+
+Note: get_colorized_image_from_db() intentionally always returns None —
+DB caching for colorized images was disabled. Every call with colorized=True
+regenerates the image, which incurs a Replicate API call.
+"""
 import os
 import replicate
 from typing import Optional

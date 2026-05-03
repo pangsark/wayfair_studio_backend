@@ -1,4 +1,14 @@
 # services/step_checklist.py
+"""
+AI-generated per-step action checklist using GPT-4o via Replicate.
+
+generate_checklist() is the public entry point. It:
+  1. Fetches the step description (from DB cache via get_step_explanation)
+  2. Calls GPT-4o with a prompt requesting 3-5 actionable checklist items
+  3. Returns the parsed checklist as a list of strings
+
+Results are NOT cached — the checklist is regenerated on every request.
+"""
 import os
 import json
 import replicate

@@ -1,14 +1,25 @@
-# main.py (in your backend root)
+"""
+Wayfair Studio Backend — FastAPI application entry point.
+
+Registers all HTTP routes, mounts static file directories, and runs a
+background thread at startup to pre-populate step descriptions in the DB so
+that the first request for each step is fast.
+
+Static mounts:
+  /manuals/*          → public/manuals/   (step PNGs and GLB files)
+  /lasso_screenshots/* → lasso_screenshots/
+  /spatial_viewer/*   → services/spatial-viewer/index.html (Three.js viewer)
+"""
 
 import os
 import json
 import threading
+from typing import List, Optional
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional
 from dotenv import load_dotenv
 from pathlib import Path
 import tempfile
@@ -19,7 +30,7 @@ from services.chat_service import get_chat_response, get_chat_response_stream
 from services.manual_processor import start_manual_processing, get_job_status, segment_manual_into_steps
 from services.orientation_generator import start_orientation_generation
 from services.step_colorizer import get_step_image_url
-from services.lasso import save_lasso_screenshot, LassoImageData
+from services.lasso import LassoImageData
 from services.step_checklist import generate_checklist
 from services.transcription import transcribe_audio
 from services.tts import synthesize_speech
@@ -386,17 +397,16 @@ def process_manual_endpoint(
    Once job completes, database has manual record + series of
    step images under `public/manuals/<manual_id>/stepN.png`
    """
-   # save uploaded pdf to temporary location
+   # save uploaded pdf to a temp file; background thread deletes it when done
    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
    contents = file.file.read()
    tmp.write(contents)
    tmp.flush()
+   tmp.close()
    tmp_path = Path(tmp.name)
 
    job_id = start_manual_processing(tmp_path, name, slug, description)
    return {"job_id": job_id, "status": "processing"}
-
-from typing import List
 
 @app.get("/api/manuals/{manual_id}/pages")
 def get_manual_pages_endpoint(manual_id: int):

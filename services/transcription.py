@@ -1,3 +1,13 @@
+"""
+Audio transcription using OpenAI Whisper large-v3 via Replicate.
+
+transcribe_audio() accepts base64-encoded audio (with or without a data URI
+prefix), writes it to a temp file with the correct extension, calls Replicate,
+and returns {"text": "transcription string"}.
+
+Supported input formats: webm/opus (default from frontend), wav, mp3, ogg.
+The frontend sends MediaRecorder output as webm/opus.
+"""
 import os
 import base64
 import tempfile

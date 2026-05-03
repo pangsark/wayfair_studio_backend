@@ -1,4 +1,21 @@
 # services/chat_service.py
+"""
+AI chat service for assembly assistance.
+
+Uses GPT-4.1-mini via Replicate. Responses are validated against a strict JSON
+schema before being returned:
+
+  qa         — {type, answer, why?}
+  procedural — {type, summary, steps?, common_mistakes?}
+
+Both shapes enforce a 100-word cap across all string fields (STRUCTURED_WORD_CAP).
+The model is retried up to max_attempts (default 3) times if it produces invalid
+JSON or fails schema validation.
+
+Public API:
+  get_chat_response()        — blocking, returns validated payload dict
+  get_chat_response_stream() — generator, yields {"event":"final","payload":{...}}
+"""
 import os
 import json
 from pathlib import Path

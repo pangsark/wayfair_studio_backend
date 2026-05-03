@@ -1,3 +1,18 @@
+"""
+Lasso screenshot service.
+
+Receives a base64-encoded PNG crop from the frontend's LassoTool, saves it to
+lasso_screenshots/lasso.png, then sends both the crop and the full step image
+to GPT-4o via Replicate.
+
+The AI returns a JSON object with:
+  summary   — 1-3 sentence description of what the lassoed region shows
+  questions — exactly 2 contextual questions the user might want to ask
+
+Note: lasso.png is always overwritten; concurrent users will clobber each
+other's screenshots. This is acceptable for single-user or sequential use but
+should be addressed (e.g. per-session filenames) for concurrent deployment.
+"""
 import os
 from pathlib import Path
 import base64
@@ -5,8 +20,8 @@ import json
 import replicate
 from pydantic import BaseModel
 
-# Configure the directory where lasso screenshots will be stored
-LASSO_STORAGE_DIR = Path("lasso_screenshots")
+# Absolute path so the directory resolves correctly regardless of cwd
+LASSO_STORAGE_DIR = Path(__file__).resolve().parent.parent / "lasso_screenshots"
 LASSO_STORAGE_DIR.mkdir(exist_ok=True)
 
 MANUALS_DIR = Path(__file__).resolve().parent.parent / "public" / "manuals"
@@ -84,17 +99,15 @@ def analyze_lasso_image(data: LassoImageData) -> dict:
     # 3. Send both images to GPT-4o via Replicate
     try:
         response_parts = []
-        for event in replicate.stream(
-            VISION_MODEL,
-            input={
-                "image_input": [
-                    open(step_image_path, "rb"),
-                    open(lasso_path, "rb"),
-                ],
-                "prompt": ANALYSIS_PROMPT,
-            }
-        ):
-            response_parts.append(str(event))
+        with open(step_image_path, "rb") as step_img, open(lasso_path, "rb") as lasso_img:
+            for event in replicate.stream(
+                VISION_MODEL,
+                input={
+                    "image_input": [step_img, lasso_img],
+                    "prompt": ANALYSIS_PROMPT,
+                }
+            ):
+                response_parts.append(str(event))
 
         raw_response = "".join(response_parts).strip()
         print(f"[Lasso] Raw AI response: {raw_response}")

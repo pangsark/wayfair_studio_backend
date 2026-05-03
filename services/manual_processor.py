@@ -1,3 +1,21 @@
+"""
+PDF ingestion pipeline for Wayfair Studio.
+
+Two-phase workflow:
+  Phase 1 (start_manual_processing / ingest_pdf_pages):
+    - Converts PDF pages to 300 DPI PNGs via pdf2image
+    - Sends each page to Nano Banana 2 on Replicate, which draws magenta
+      rectangles around each assembly step
+    - Uses OpenCV to find the magenta contours and extract (x,y,w,h) boxes
+    - Stores pages + suggested boxes in the DB; job status → pending_segmentation
+
+  Phase 2 (segment_manual_into_steps):
+    - Triggered by the frontend Segmentation Editor after the user confirms boxes
+    - Crops each box from the page image, saves stepN.png files
+    - Inserts step records into the DB
+
+Job state is tracked in the module-level JOBS dict (in-memory; lost on restart).
+"""
 import os
 import uuid
 import threading
@@ -354,6 +372,12 @@ def start_manual_processing(file_path: Path, name: str = None, slug: str = None,
        except Exception as e:
            JOBS[job_id]["status"] = "failed"
            JOBS[job_id]["error"] = str(e)
+       finally:
+           # Clean up the temp PDF uploaded by the caller
+           try:
+               file_path.unlink(missing_ok=True)
+           except Exception:
+               pass
 
 
    thread = threading.Thread(target=_background, daemon=True)
